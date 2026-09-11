@@ -14,6 +14,12 @@
     "assetBundlePatterns": [
       "assets/audio/**/*",
       "assets/images/**/*"
+    ],
+    "plugins": [
+      "expo-audio",
+      "expo-asset",
+      "expo-splash-screen",
+      "expo-build-properties"
     ]
   }
 }
