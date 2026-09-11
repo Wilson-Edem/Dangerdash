@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, TouchableWithoutFeedback } from 'react-native';
 import GameCanvas from '../components/GameCanvas';
-import { useGameEngine } from '../utils/useGameEngine';
+import { useGameLoop } from '../utils/useGameLoop';
 
 export default function GameScreen() {
   const {
@@ -9,12 +9,16 @@ export default function GameScreen() {
     score,
     coins,
     health,
+    hasShield,
+    isGrounded,
+    animFrame,
     playerX,
     playerY,
     powerJumpFlash,
     platforms,
+    items,
     handleScreenTap,
-  } = useGameEngine();
+  } = useGameLoop();
 
   return (
     <TouchableWithoutFeedback onPress={handleScreenTap}>
@@ -24,9 +28,13 @@ export default function GameScreen() {
           playerY={playerY}
           powerJumpFlash={powerJumpFlash}
           platforms={platforms}
+          items={items}
           score={score}
           coins={coins}
           health={health}
+          hasShield={hasShield}
+          isGrounded={isGrounded}
+          animFrame={animFrame}
           gameState={gameState}
         />
       </View>

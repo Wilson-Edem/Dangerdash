@@ -1,30 +1,37 @@
 export const GAME_CONFIG = {
+  // Virtual Viewport Dimensions (800x450 Contain Matrix)
   VIRTUAL_WIDTH: 800,
   VIRTUAL_HEIGHT: 450,
 
+  // Game States
   STATE: {
     MENU: 'MENU',
     PLAYING: 'PLAYING',
     GAMEOVER: 'GAMEOVER',
   },
 
+  // Physics & World Mechanics
   GRAVITY: 0.85,
   BASE_SPEED: 4.5,
   MAX_SPEED: 12.0,
   SPEED_ACCELERATION: 0.0004,
 
+  // Player Stats & Collision
   PLAYER_START_X: 120,
   PLAYER_START_Y: 200,
   PLAYER_WIDTH: 36,
   PLAYER_HEIGHT: 48,
   MAX_HEALTH: 3,
+  INVINCIBILITY_FRAMES: 60,
 
+  // Jump Mechanics
   JUMP_FORCE: -15.2,
   POWER_JUMP_FORCE: -25.0,
   MAX_MIDAIR_JUMPS: 1,
   DOUBLE_TAP_WINDOW: 300,
   POWER_JUMP_COOLDOWN: 400,
 
+  // Platform & Terrain Physics
   GROUND_Y: 340,
   PLATFORM_HEIGHT: 110,
   MIN_PLATFORM_WIDTH: 160,
@@ -32,6 +39,22 @@ export const GAME_CONFIG = {
   STANDARD_GAP: 120,
   MAX_GAP: 190,
 
+  // Item Types & Dimensions
+  ITEM_TYPES: {
+    COIN: 'COIN',
+    SPIKE: 'SPIKE',
+    BOOST_PAD: 'BOOST_PAD',
+    SHIELD: 'SHIELD',
+  },
+  COIN_SIZE: 22,
+  SPIKE_WIDTH: 28,
+  SPIKE_HEIGHT: 22,
+  BOOST_PAD_WIDTH: 42,
+  BOOST_PAD_HEIGHT: 10,
+  SHIELD_ITEM_SIZE: 26,
+  BOOST_SPEED_MULTIPLIER: 1.4,
+
+  // Hazards & Boundaries
   WATER_LEVEL_Y: 390,
   FALL_DEATH_Y: 450,
 };

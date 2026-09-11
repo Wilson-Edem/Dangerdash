@@ -1,0 +1,25 @@
+export const PALETTE = {
+  // Cyberpunk Primary Theme
+  NEON_CYAN: '#00FFCC',
+  NEON_PINK: '#FF0055',
+  NEON_PURPLE: '#A855F7',
+  NEON_YELLOW: '#FFD700',
+  NEON_BLUE: '#00F0FF',
+
+  // Environment & Terrain
+  DARK_BG_START: '#030114',
+  DARK_BG_MID: '#170636',
+  DARK_BG_END: '#2E0D54',
+
+  PLATFORM_BASE: '#1E1B2E',
+  PLATFORM_TOP_EDGE: '#00FFCC',
+  PLATFORM_SIDE_HIGHLIGHT: '#FF0055',
+
+  WATER_TOP: '#00D8FF',
+  WATER_BOTTOM: '#020015',
+
+  // Overlay HUD
+  HUD_SURFACE: 'rgba(3, 1, 12, 0.75)',
+  HUD_BORDER: '#00F0FF',
+  WHITE: '#FFFFFF',
+};
