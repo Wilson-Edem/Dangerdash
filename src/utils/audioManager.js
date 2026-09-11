@@ -1,22 +1,22 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 const SOUND_ASSETS = {
-  // === Music ===
+  // === Music (kept as .mp3 — these are large files) ===
   menu_theme: require('../../assets/audio/music/menu_theme.mp3'),
   gameplay_track_1: require('../../assets/audio/music/gameplay_track_1.mp3'),
   gameplay_track_2: require('../../assets/audio/music/gameplay_track_2.mp3'),
 
-  // === SFX ===
-  ui_click: require('../../assets/audio/sfx/ui_click.mp3'),
-  jump: require('../../assets/audio/sfx/jump.mp3'),
-  power_jump: require('../../assets/audio/sfx/power_jump.mp3'),
-  coin_pickup: require('../../assets/audio/sfx/coin_pickup.mp3'),
-  powerup: require('../../assets/audio/sfx/powerup.mp3'),
-  shield_hit: require('../../assets/audio/sfx/shield_hit.mp3'),
-  heart_lost: require('../../assets/audio/sfx/heart_lost.mp3'),
-  boost_pad: require('../../assets/audio/sfx/boost_pad.mp3'),
-  water_splash: require('../../assets/audio/sfx/water_splash.mp3'),
-  game_over: require('../../assets/audio/sfx/game_over.mp3'),
+  // === SFX (.wav — zero-latency, matches your folder) ===
+  ui_click: require('../../assets/audio/sfx/ui_click.wav'),
+  jump: require('../../assets/audio/sfx/jump.wav'),
+  power_jump: require('../../assets/audio/sfx/power_jump.wav'),
+  coin_pickup: require('../../assets/audio/sfx/coin_pickup.wav'),
+  powerup: require('../../assets/audio/sfx/powerup.wav'),
+  shield_hit: require('../../assets/audio/sfx/shield_hit.wav'),
+  heart_lost: require('../../assets/audio/sfx/heart_lost.wav'),
+  boost_pad: require('../../assets/audio/sfx/boost_pad.wav'),
+  water_splash: require('../../assets/audio/sfx/water_splash.wav'),
+  game_over: require('../../assets/audio/sfx/game_over.wav'),
 };
 
 const MUSIC_TRACKS = ['menu_theme', 'gameplay_track_1', 'gameplay_track_2'];
@@ -83,7 +83,6 @@ export async function playMusic(key) {
     musicPlayer.volume = 0;
     musicPlayer.play();
     currentMusicKey = key;
-
     fadeVolume(musicPlayer, 0, 0.5, 800);
   } catch (error) {
     console.warn(`Music playback error (${key}):`, error);
@@ -92,7 +91,6 @@ export async function playMusic(key) {
 
 export function stopMusic() {
   if (!musicPlayer) return;
-
   const playerToStop = musicPlayer;
   fadeVolume(playerToStop, playerToStop.volume || 0.5, 0, 400, () => {
     try {

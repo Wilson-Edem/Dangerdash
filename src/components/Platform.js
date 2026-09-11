@@ -18,8 +18,8 @@ export default function Platform({ platforms }) {
             color={PALETTE.PLATFORM_BASE}
           >
             {platformTile && (
-              // 🔧 FIX: `fit` controls scaling, `tx`/`ty` control tiling
-              // The tile rect is 64x64; tx/ty="repeat" tiles infinitely.
+              // 🔧 FIX: `fit` controls scaling, `tx`/`ty` control tiling.
+              // `fit="repeat"` is NOT a valid Skia value — this crashed silently.
               <ImageShader
                 image={platformTile}
                 fit="none"
