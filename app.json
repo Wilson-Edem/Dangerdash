@@ -9,7 +9,14 @@
       "userInterfaceStyle": "dark",
       "adaptiveIcon": {
         "backgroundColor": "#030108"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "package": "com.vhite.dangerdashmobile"
     },
     "assetBundlePatterns": [
       "assets/audio/**/*",
@@ -20,6 +27,11 @@
       "expo-asset",
       "expo-splash-screen",
       "expo-build-properties"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bdb8e3e6-6632-4df8-be4c-327ce03fd57c"
+      }
+    }
   }
 }
