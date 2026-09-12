@@ -141,7 +141,7 @@ export default function LoadingScreen({ onFinishLoading }) {
                 },
               ]}
             >
-              DANGER DASH MOBILE
+              DANGERDASH MOBILE
             </Animated.Text>
             <Text style={styles.subTitle}>by Vhite</Text>
           </Animated.View>

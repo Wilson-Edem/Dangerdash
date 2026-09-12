@@ -66,7 +66,7 @@ export default function GameScreen() {
         {/* ===== MENU OVERLAY ===== */}
         {gameState === GAME_CONFIG.STATE.MENU && (
           <View style={styles.centerOverlay} pointerEvents="none">
-            <Text style={styles.titleText}>DANGER DASH</Text>
+            <Text style={styles.titleText}>DANGERDASH</Text>
             <Text style={styles.subTitleText}>MOBILE • BY VHITE</Text>
             <Text style={styles.promptText}>TAP ANYWHERE TO RUN</Text>
           </View>
