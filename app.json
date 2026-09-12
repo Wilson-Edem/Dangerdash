@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DangerDash Mobile",
-    "slug": "dangerdash-mobile",
+    "slug": "dangerdash",
     "version": "1.0.0",
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
