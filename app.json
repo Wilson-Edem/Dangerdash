@@ -5,12 +5,12 @@
     "version": "1.0.0",
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
-    "icon": "./assets/images/icon.png", 
+    "icon": "./assets/images/icon.jpg", 
     "android": {
       "package": "com.vhite.dangerdashmobile",
       "userInterfaceStyle": "dark",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.jpg",
         "backgroundColor": "#030108"
       },
       "permissions": [

@@ -12,10 +12,10 @@ export default function Player({
   animFrame,
   activePower,
   gravityFlipped,
+  skinColors,
 }) {
   const spriteImage = useImage(require('../../assets/images/player/player_spritesheet.png'));
   const shieldAuraImage = useImage(require('../../assets/images/items/shield_aura.png'));
-  const jetpackFlame = useImage(require('../../assets/images/items/jetpack_flame.png'));
 
   const imgWidth = spriteImage?.width() ?? 0;
   const imgHeight = spriteImage?.height() ?? 0;
@@ -24,39 +24,23 @@ export default function Player({
 
   const currentFrame = isGrounded ? animFrame % 4 : 1;
   const auraColor = activePower ? PALETTE.POWER_COLORS[activePower] : null;
-
   const centerX = playerX + GAME_CONFIG.PLAYER_WIDTH / 2;
   const centerY = playerY + GAME_CONFIG.PLAYER_HEIGHT / 2;
 
   return (
     <Group>
-      {/* Power-up aura (colored glow) */}
       {auraColor && (
         <Circle cx={centerX} cy={centerY} r={GAME_CONFIG.PLAYER_HEIGHT * 0.95} color={auraColor} opacity={0.5}>
           <BlurMask blur={20} style="solid" />
         </Circle>
       )}
 
-      {/* Power jump flash */}
       {powerJumpFlash > 0 && (
         <Circle cx={centerX} cy={centerY} r={GAME_CONFIG.PLAYER_HEIGHT * 0.85} color={PALETTE.NEON_CYAN} opacity={powerJumpFlash}>
           <BlurMask blur={15} style="solid" />
         </Circle>
       )}
 
-      {/* Jetpack flame (only when airborne) */}
-      {!isGrounded && jetpackFlame && (
-        <Image
-          image={jetpackFlame}
-          x={playerX - 15}
-          y={playerY + GAME_CONFIG.PLAYER_HEIGHT - 10}
-          width={GAME_CONFIG.PLAYER_WIDTH + 30}
-          height={40}
-          fit="contain"
-        />
-      )}
-
-      {/* Player sprite from spritesheet */}
       {spriteImage && (
         <Image
           image={spriteImage}
@@ -65,16 +49,10 @@ export default function Player({
           width={GAME_CONFIG.PLAYER_WIDTH}
           height={gravityFlipped ? -GAME_CONFIG.PLAYER_HEIGHT : GAME_CONFIG.PLAYER_HEIGHT}
           fit="fill"
-          rect={{
-            x: currentFrame * frameWidth,
-            y: 0,
-            width: frameWidth,
-            height: frameHeight,
-          }}
+          rect={{ x: currentFrame * frameWidth, y: 0, width: frameWidth, height: frameHeight }}
         />
       )}
 
-      {/* Shield bubble from PNG */}
       {hasShield && shieldAuraImage && (
         <Image
           image={shieldAuraImage}

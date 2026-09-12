@@ -1,6 +1,7 @@
 import React from 'react';
-import { Group, Image, useImage } from '@shopify/react-native-skia';
+import { Group, Circle, Image, useImage, BlurMask } from '@shopify/react-native-skia';
 import { GAME_CONFIG } from '../constants/gameConfig';
+import { PALETTE } from '../constants/palette';
 
 export default function Items({ items }) {
   const coinSprite = useImage(require('../../assets/images/items/coin_spritesheet.png'));
@@ -11,72 +12,46 @@ export default function Items({ items }) {
   return (
     <Group>
       {items.map((item) => {
-        // === COIN ===
         if (item.type === GAME_CONFIG.ITEM_TYPES.COIN && coinSprite) {
           return (
-            <Image
-              key={item.id}
-              image={coinSprite}
-              x={item.x}
-              y={item.y}
-              width={item.width}
-              height={item.height}
-              fit="contain"
-            />
+            <Image key={item.id} image={coinSprite} x={item.x} y={item.y} width={item.width} height={item.height} fit="contain" />
           );
         }
 
-        // === SPIKE ===
         if (item.type === GAME_CONFIG.ITEM_TYPES.SPIKE && spikeSprite) {
           return (
-            <Image
-              key={item.id}
-              image={spikeSprite}
-              x={item.x}
-              y={item.y}
-              width={item.width}
-              height={item.height}
-              fit="fill"
-            />
+            <Image key={item.id} image={spikeSprite} x={item.x} y={item.y} width={item.width} height={item.height} fit="fill" />
           );
         }
 
-        // === BOOST PAD ===
         if (item.type === GAME_CONFIG.ITEM_TYPES.BOOST_PAD && boostSprite) {
           return (
-            <Image
-              key={item.id}
-              image={boostSprite}
-              x={item.x}
-              y={item.y}
-              width={item.width}
-              height={item.height}
-              fit="fill"
-            />
+            <Image key={item.id} image={boostSprite} x={item.x} y={item.y} width={item.width} height={item.height} fit="fill" />
           );
         }
 
-        // === POWER ORB ===
-        // If it's a SHIELD orb, use shield_aura.png. Otherwise draw a colored circle.
         if (item.type === GAME_CONFIG.ITEM_TYPES.POWER_ORB) {
           const isShield = item.powerType === GAME_CONFIG.POWER_TYPES.SHIELD;
+          const cx = item.x + item.width / 2;
+          const cy = item.y + item.height / 2;
+          const r = item.width / 2;
+
           if (isShield && shieldSprite) {
             return (
-              <Image
-                key={item.id}
-                image={shieldSprite}
-                x={item.x}
-                y={item.y}
-                width={item.width}
-                height={item.height}
-                fit="contain"
-              />
+              <Image key={item.id} image={shieldSprite} x={item.x} y={item.y} width={item.width} height={item.height} fit="contain" />
             );
           }
-          // For other power types, we don't have individual sprites yet.
-          // Returning null skips rendering until sprites exist.
-          // (If you want visible orbs now, uncomment the Circle fallback below.)
-          return null;
+
+          const color = PALETTE.POWER_COLORS[item.powerType] || PALETTE.NEON_BLUE;
+          return (
+            <Group key={item.id}>
+              <Circle cx={cx} cy={cy} r={r + 8} color={color} opacity={0.4}>
+                <BlurMask blur={10} style="solid" />
+              </Circle>
+              <Circle cx={cx} cy={cy} r={r} color={color} />
+              <Circle cx={cx - r * 0.3} cy={cy - r * 0.3} r={r * 0.4} color={PALETTE.WHITE} opacity={0.9} />
+            </Group>
+          );
         }
 
         return null;

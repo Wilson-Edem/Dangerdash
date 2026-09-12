@@ -5,14 +5,27 @@ import { useGameLoop } from '../utils/useGameLoop';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
 
-export default function GameScreen() {
+export default function GameScreen({ onGameOver }) {
   const {
-    gameState, score, coins, health, hasShield, isGrounded, animFrame,
-    playerX, playerY, powerJumpFlash, platforms, items,
-    activePower, powerTimer, combo, gravityFlipped,
-    deathFadeAlpha, highScore,
+    gameState,
+    score,
+    coins,
+    health,
+    hasShield,
+    isGrounded,
+    animFrame,
+    playerX,
+    playerY,
+    powerJumpFlash,
+    platforms,
+    items,
+    activePower,
+    powerTimer,
+    combo,
+    gravityFlipped,
+    deathFadeAlpha,
     handleScreenTap,
-  } = useGameLoop();
+  } = useGameLoop(onGameOver);
 
   const showHUD =
     gameState === GAME_CONFIG.STATE.PLAYING ||
@@ -22,7 +35,7 @@ export default function GameScreen() {
     <TouchableWithoutFeedback onPress={handleScreenTap}>
       <View style={styles.touchContainer}>
 
-        {/* ===== SKIA CANVAS (game world) ===== */}
+        {/* SKIA CANVAS — game world */}
         <GameCanvas
           playerX={playerX}
           playerY={playerY}
@@ -43,19 +56,29 @@ export default function GameScreen() {
           deathFadeAlpha={deathFadeAlpha}
         />
 
-        {/* ===== HUD OVERLAY ===== */}
+        {/* HUD OVERLAY */}
         {showHUD && (
           <View style={styles.hudTop} pointerEvents="none">
             <View>
-              <Text style={styles.hudText}>SCORE: {String(score).padStart(6, '0')}</Text>
+              <Text style={styles.hudText}>
+                SCORE: {String(score).padStart(6, '0')}
+              </Text>
               <Text style={styles.hudText}>COINS: {coins}</Text>
-              <Text style={styles.hudText}>HP: {'❤️ '.repeat(Math.max(0, health))}</Text>
+              <Text style={styles.hudText}>
+                HP: {'❤️ '.repeat(Math.max(0, health))}
+              </Text>
             </View>
             <View style={styles.alignRight}>
-              <Text style={styles.hudText}>HIGH: {highScore}</Text>
-              {combo > 0 && <Text style={styles.comboText}>COMBO x{combo}</Text>}
+              {combo > 0 && (
+                <Text style={styles.comboText}>COMBO x{combo}</Text>
+              )}
               {activePower && (
-                <Text style={[styles.powerText, { color: PALETTE.POWER_COLORS[activePower] || PALETTE.NEON_CYAN }]}>
+                <Text
+                  style={[
+                    styles.powerText,
+                    { color: PALETTE.POWER_COLORS[activePower] || PALETTE.NEON_CYAN },
+                  ]}
+                >
                   {PALETTE.POWER_ICONS[activePower]} {activePower}
                 </Text>
               )}
@@ -63,21 +86,21 @@ export default function GameScreen() {
           </View>
         )}
 
-        {/* ===== MENU OVERLAY ===== */}
+        {/* MENU OVERLAY */}
         {gameState === GAME_CONFIG.STATE.MENU && (
           <View style={styles.centerOverlay} pointerEvents="none">
-            <Text style={styles.titleText}>DANGERDASH</Text>
+            <Text style={styles.titleText}>DANGER DASH</Text>
             <Text style={styles.subTitleText}>MOBILE • BY VHITE</Text>
             <Text style={styles.promptText}>TAP ANYWHERE TO RUN</Text>
           </View>
         )}
 
-        {/* ===== GAME OVER OVERLAY ===== */}
+        {/* GAME OVER OVERLAY (fade before App.js transitions) */}
         {gameState === GAME_CONFIG.STATE.GAMEOVER && deathFadeAlpha >= 0.7 && (
           <View style={styles.centerOverlay} pointerEvents="none">
             <Text style={styles.gameOverText}>GAME OVER</Text>
             <Text style={styles.scoreSummaryText}>FINAL SCORE: {score}</Text>
-            <Text style={styles.promptText}>TAP TO TRY AGAIN</Text>
+            <Text style={styles.promptText}>Loading results...</Text>
           </View>
         )}
 
