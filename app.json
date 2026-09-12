@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Danger Dash Mobile",
-    "slug": "danger-dash-mobile",
+    "slug": "dangerdash",
     "version": "1.0.0",
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
@@ -12,8 +12,10 @@
         "backgroundColor": "#030108"
       },
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "assetBundlePatterns": [
@@ -32,6 +34,11 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e79e6a1e-aefb-4bb3-964d-cf2599a79a77"
+      }
+    }
   }
 }
