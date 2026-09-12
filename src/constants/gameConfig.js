@@ -36,14 +36,15 @@ export const GAME_CONFIG = {
   DOUBLE_TAP_WINDOW: 300,
   POWER_JUMP_COOLDOWN: 400,
 
-  // === Platforms (raised to leave room for water) ===
+  // === Platforms ===
   GROUND_Y: 200,
-  PLATFORM_HEIGHT: 110,
+  PLATFORM_HEIGHT: 220,           // ← doubled (was 110)
   MIN_PLATFORM_WIDTH: 180,
   MAX_PLATFORM_WIDTH: 420,
-  STANDARD_GAP: 110,
-  MAX_GAP: 220,
+  STANDARD_GAP: 110,              // ← restored
+  MAX_GAP: 220,                   // ← restored
 
+  SPRITE_OFFSET_Y: 12,
   // === Items (bigger sizes) ===
   ITEM_TYPES: {
     COIN: 'COIN',
@@ -86,8 +87,8 @@ export const GAME_CONFIG = {
   COMBO_TIMEOUT_FRAMES: 300,
   COMBO_SCORE_BONUS: 0.2,
 
-  // === Water (moved up to be clearly visible) ===
-  WATER_LEVEL_Y: 370,
+  // === Water (raised so it's more prominent) ===
+  WATER_LEVEL_Y: 340,
   FALL_DEATH_Y: 470,
 
   MUSIC_BASE_VOLUME: 0.5,

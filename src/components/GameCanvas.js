@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
-  Canvas, Rect, Group, LinearGradient, vec, useImage, Image,
+  Canvas, Rect, Group, LinearGradient, vec, useImage, Image, ImageShader,
 } from '@shopify/react-native-skia';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
@@ -12,7 +12,7 @@ import Items from './Items';
 export default function GameCanvas({
   playerX, playerY, powerJumpFlash, platforms, items, score,
   gameState, isGrounded, animFrame, activePower, gravityFlipped,
-  hasShield, deathFadeAlpha, skinColors,
+  hasShield, deathFadeAlpha,
 }) {
   const bgSky = useImage(require('../../assets/images/background/bg_sky_gradient.png'));
   const bgCityFar = useImage(require('../../assets/images/background/bg_city_far.png'));
@@ -23,10 +23,16 @@ export default function GameCanvas({
   const nearOffset = (score * 2.2) % GAME_CONFIG.VIRTUAL_WIDTH;
   const waterHeight = GAME_CONFIG.VIRTUAL_HEIGHT - GAME_CONFIG.WATER_LEVEL_Y;
 
+  // Water animation: horizontal scroll + vertical bob
+  const WATER_TILE_W = 180;
+  const waterScrollX = (animFrame * 1.6) % WATER_TILE_W;      // flows left
+  const waterBobY = Math.sin(animFrame * 0.08) * 3;            // gentle bob
+
   return (
     <View style={styles.canvasContainer}>
       <Canvas style={styles.canvas}>
 
+        {/* Base gradient */}
         <Rect x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT}>
           <LinearGradient
             start={vec(0, 0)}
@@ -35,10 +41,12 @@ export default function GameCanvas({
           />
         </Rect>
 
+        {/* Sky */}
         {bgSky && (
           <Image image={bgSky} x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT} fit="cover" />
         )}
 
+        {/* Far city */}
         {bgCityFar && (
           <Group>
             <Image image={bgCityFar} x={-farOffset} y={170} width={GAME_CONFIG.VIRTUAL_WIDTH} height={170} fit="fill" />
@@ -46,6 +54,7 @@ export default function GameCanvas({
           </Group>
         )}
 
+        {/* Near city */}
         {bgCityNear && (
           <Group>
             <Image image={bgCityNear} x={-nearOffset} y={210} width={GAME_CONFIG.VIRTUAL_WIDTH} height={170} fit="fill" />
@@ -53,29 +62,70 @@ export default function GameCanvas({
           </Group>
         )}
 
-        {/* 🔧 FIXED WATER: plain Image, fit="fill" */}
+        {/* === WATER (animated, flowing) === */}
         {waterTile ? (
-          <Image
-            image={waterTile}
-            x={0}
-            y={GAME_CONFIG.WATER_LEVEL_Y}
-            width={GAME_CONFIG.VIRTUAL_WIDTH}
-            height={waterHeight}
-            fit="fill"
-          />
+          <Group>
+            {/* Base water with horizontal scroll */}
+            <Rect
+              x={0}
+              y={GAME_CONFIG.WATER_LEVEL_Y + waterBobY}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={waterHeight}
+            >
+              <ImageShader
+                image={waterTile}
+                fit="none"
+                rect={{ x: -waterScrollX, y: 0, width: WATER_TILE_W, height: waterHeight }}
+                tx="repeat"
+                ty="clamp"
+              />
+            </Rect>
+
+            {/* Bright foam line on the surface */}
+            <Rect
+              x={0}
+              y={GAME_CONFIG.WATER_LEVEL_Y + waterBobY}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={3}
+              color={PALETTE.WHITE}
+              opacity={0.75}
+            />
+            <Rect
+              x={0}
+              y={GAME_CONFIG.WATER_LEVEL_Y + waterBobY + 3}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={2}
+              color={PALETTE.NEON_CYAN}
+              opacity={0.5}
+            />
+          </Group>
         ) : (
-          <Rect
-            x={0}
-            y={GAME_CONFIG.WATER_LEVEL_Y}
-            width={GAME_CONFIG.VIRTUAL_WIDTH}
-            height={waterHeight}
-            color={PALETTE.WATER_COLOR}
-          />
+          <Group>
+            <Rect
+              x={0}
+              y={GAME_CONFIG.WATER_LEVEL_Y + waterBobY}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={waterHeight}
+              color={PALETTE.WATER_COLOR}
+            />
+            <Rect
+              x={0}
+              y={GAME_CONFIG.WATER_LEVEL_Y + waterBobY}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={3}
+              color={PALETTE.WHITE}
+              opacity={0.75}
+            />
+          </Group>
         )}
 
+        {/* Platforms (draw over water — their bottoms disappear into fluid) */}
         <Platform platforms={platforms} />
+
+        {/* Items */}
         <Items items={items} />
 
+        {/* Player */}
         <Player
           playerX={playerX}
           playerY={playerY}
@@ -87,6 +137,7 @@ export default function GameCanvas({
           gravityFlipped={gravityFlipped}
         />
 
+        {/* Death fade */}
         <Rect
           x={0}
           y={0}

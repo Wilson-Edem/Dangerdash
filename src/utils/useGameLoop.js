@@ -332,12 +332,11 @@ export function useGameLoop(onGameOver) {
         appliedGravity *= GAME_CONFIG.FALL_GRAVITY_MULTIPLIER;
       }
 
-      playerVelocityYRef.current = Math.max(
+            playerVelocityYRef.current = Math.max(
         -GAME_CONFIG.MAX_FALL_SPEED,
         Math.min(GAME_CONFIG.MAX_FALL_SPEED, playerVelocityYRef.current + appliedGravity)
       );
       playerYRef.current += playerVelocityYRef.current;
-
       // Long-air quip
       if (!isGroundedRef.current) {
         if (longAirStartRef.current === 0) longAirStartRef.current = now;
@@ -405,11 +404,12 @@ export function useGameLoop(onGameOver) {
         const plat = updatedPlatforms[i];
         const horizontalOverlap = pX + pW > plat.x && pX < plat.x + plat.width;
 
-        if (!gravityFlippedRef.current) {
-          const verticalCross = currentBottom >= plat.y && prevBottom <= plat.y + 12;
+                if (!gravityFlippedRef.current) {
+          // Wider tolerance window = no more 0.85px bounce
+          const verticalCross = currentBottom >= plat.y - 4 && currentBottom <= plat.y + 18;
           const falling = playerVelocityYRef.current >= 0;
           if (horizontalOverlap && verticalCross && falling) {
-            playerYRef.current = plat.y - pH;
+            playerYRef.current = plat.y - pH;   // HARD SNAP
             playerVelocityYRef.current = 0;
             isGroundedRef.current = true;
             jumpCountRef.current = 0;
@@ -529,9 +529,9 @@ export function useGameLoop(onGameOver) {
         setScore(newScore);
       }
 
-      // Sync
-      setPlayerX(pX);
-      setPlayerY(playerYRef.current);
+           // Sync (rounded to prevent sub-pixel jitter)
+      setPlayerX(Math.round(pX));
+      setPlayerY(Math.round(playerYRef.current));
       setIsGrounded(isGroundedRef.current);
       setAnimFrame(Math.floor(frameTickRef.current / 4));
       setPlatforms(updatedPlatforms);

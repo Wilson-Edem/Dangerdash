@@ -12,7 +12,6 @@ export default function Player({
   animFrame,
   activePower,
   gravityFlipped,
-  skinColors,
 }) {
   const spriteImage = useImage(require('../../assets/images/player/player_spritesheet.png'));
   const shieldAuraImage = useImage(require('../../assets/images/items/shield_aura.png'));
@@ -24,8 +23,13 @@ export default function Player({
 
   const currentFrame = isGrounded ? animFrame % 4 : 1;
   const auraColor = activePower ? PALETTE.POWER_COLORS[activePower] : null;
+
+  // Push sprite down so the visible character sits on the platform edge
+  const OFFSET_Y = GAME_CONFIG.SPRITE_OFFSET_Y || 0;
+  const renderY = playerY + OFFSET_Y;
+
   const centerX = playerX + GAME_CONFIG.PLAYER_WIDTH / 2;
-  const centerY = playerY + GAME_CONFIG.PLAYER_HEIGHT / 2;
+  const centerY = renderY + GAME_CONFIG.PLAYER_HEIGHT / 2;
 
   return (
     <Group>
@@ -44,20 +48,25 @@ export default function Player({
       {spriteImage && (
         <Image
           image={spriteImage}
-          x={playerX}
-          y={gravityFlipped ? playerY + GAME_CONFIG.PLAYER_HEIGHT : playerY}
+          x={Math.round(playerX)}
+          y={Math.round(gravityFlipped ? renderY + GAME_CONFIG.PLAYER_HEIGHT : renderY)}
           width={GAME_CONFIG.PLAYER_WIDTH}
           height={gravityFlipped ? -GAME_CONFIG.PLAYER_HEIGHT : GAME_CONFIG.PLAYER_HEIGHT}
           fit="fill"
-          rect={{ x: currentFrame * frameWidth, y: 0, width: frameWidth, height: frameHeight }}
+          rect={{
+            x: currentFrame * frameWidth,
+            y: 0,
+            width: frameWidth,
+            height: frameHeight,
+          }}
         />
       )}
 
       {hasShield && shieldAuraImage && (
         <Image
           image={shieldAuraImage}
-          x={playerX - 20}
-          y={playerY - 18}
+          x={Math.round(playerX) - 20}
+          y={Math.round(renderY) - 18}
           width={GAME_CONFIG.PLAYER_WIDTH + 40}
           height={GAME_CONFIG.PLAYER_HEIGHT + 36}
           fit="contain"
