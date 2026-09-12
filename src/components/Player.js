@@ -1,60 +1,69 @@
 import React from 'react';
-import { Group, Rect, Circle, BlurMask, Image, useImage } from '@shopify/react-native-skia';
+import { Group, Circle, BlurMask, Image, useImage } from '@shopify/react-native-skia';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
 
-export default function Player({ playerX, playerY, powerJumpFlash, isGrounded, hasShield, animFrame }) {
+export default function Player({
+  playerX,
+  playerY,
+  powerJumpFlash,
+  isGrounded,
+  hasShield,
+  animFrame,
+  activePower,
+  gravityFlipped,
+}) {
   const spriteImage = useImage(require('../../assets/images/player/player_spritesheet.png'));
   const shieldAuraImage = useImage(require('../../assets/images/items/shield_aura.png'));
+  const jetpackFlame = useImage(require('../../assets/images/items/jetpack_flame.png'));
 
-  const frameWidth = GAME_CONFIG.PLAYER_WIDTH;
-  const frameHeight = GAME_CONFIG.PLAYER_HEIGHT;
+  const imgWidth = spriteImage?.width() ?? 0;
+  const imgHeight = spriteImage?.height() ?? 0;
+  const frameWidth = imgWidth > 0 ? imgWidth / 4 : GAME_CONFIG.PLAYER_WIDTH;
+  const frameHeight = imgHeight > 0 ? imgHeight : GAME_CONFIG.PLAYER_HEIGHT;
+
   const currentFrame = isGrounded ? animFrame % 4 : 1;
+  const auraColor = activePower ? PALETTE.POWER_COLORS[activePower] : null;
+
+  const centerX = playerX + GAME_CONFIG.PLAYER_WIDTH / 2;
+  const centerY = playerY + GAME_CONFIG.PLAYER_HEIGHT / 2;
 
   return (
     <Group>
+      {/* Power-up aura (colored glow) */}
+      {auraColor && (
+        <Circle cx={centerX} cy={centerY} r={GAME_CONFIG.PLAYER_HEIGHT * 0.95} color={auraColor} opacity={0.5}>
+          <BlurMask blur={20} style="solid" />
+        </Circle>
+      )}
+
+      {/* Power jump flash */}
       {powerJumpFlash > 0 && (
-        <Circle
-          cx={playerX + frameWidth / 2}
-          cy={playerY + frameHeight / 2}
-          r={frameHeight * 0.85}
-          color={PALETTE.NEON_CYAN}
-          opacity={powerJumpFlash}
-        >
+        <Circle cx={centerX} cy={centerY} r={GAME_CONFIG.PLAYER_HEIGHT * 0.85} color={PALETTE.NEON_CYAN} opacity={powerJumpFlash}>
           <BlurMask blur={15} style="solid" />
         </Circle>
       )}
 
-      {hasShield && (
-        <Group>
-          {shieldAuraImage ? (
-            <Image
-              image={shieldAuraImage}
-              x={playerX - 12}
-              y={playerY - 10}
-              width={frameWidth + 24}
-              height={frameHeight + 20}
-              fit="contain"
-            />
-          ) : (
-            <Circle
-              cx={playerX + frameWidth / 2}
-              cy={playerY + frameHeight / 2}
-              r={frameHeight * 0.7}
-              color={PALETTE.NEON_BLUE}
-              opacity={0.45}
-            />
-          )}
-        </Group>
+      {/* Jetpack flame (only when airborne) */}
+      {!isGrounded && jetpackFlame && (
+        <Image
+          image={jetpackFlame}
+          x={playerX - 15}
+          y={playerY + GAME_CONFIG.PLAYER_HEIGHT - 10}
+          width={GAME_CONFIG.PLAYER_WIDTH + 30}
+          height={40}
+          fit="contain"
+        />
       )}
 
-      {spriteImage ? (
+      {/* Player sprite from spritesheet */}
+      {spriteImage && (
         <Image
           image={spriteImage}
           x={playerX}
-          y={playerY}
-          width={frameWidth}
-          height={frameHeight}
+          y={gravityFlipped ? playerY + GAME_CONFIG.PLAYER_HEIGHT : playerY}
+          width={GAME_CONFIG.PLAYER_WIDTH}
+          height={gravityFlipped ? -GAME_CONFIG.PLAYER_HEIGHT : GAME_CONFIG.PLAYER_HEIGHT}
           fit="fill"
           rect={{
             x: currentFrame * frameWidth,
@@ -63,37 +72,18 @@ export default function Player({ playerX, playerY, powerJumpFlash, isGrounded, h
             height: frameHeight,
           }}
         />
-      ) : (
-        <Group>
-          <Rect
-            x={playerX}
-            y={playerY}
-            width={frameWidth}
-            height={frameHeight}
-            color={PALETTE.NEON_PURPLE}
-          />
-          <Rect
-            x={playerX + 18}
-            y={playerY + 8}
-            width={16}
-            height={8}
-            color={PALETTE.NEON_CYAN}
-          />
-          <Rect
-            x={playerX + 4}
-            y={playerY + frameHeight - 6}
-            width={10}
-            height={6}
-            color={PALETTE.NEON_PINK}
-          />
-          <Rect
-            x={playerX + 20}
-            y={playerY + frameHeight - 6}
-            width={10}
-            height={6}
-            color={PALETTE.NEON_PINK}
-          />
-        </Group>
+      )}
+
+      {/* Shield bubble from PNG */}
+      {hasShield && shieldAuraImage && (
+        <Image
+          image={shieldAuraImage}
+          x={playerX - 20}
+          y={playerY - 18}
+          width={GAME_CONFIG.PLAYER_WIDTH + 40}
+          height={GAME_CONFIG.PLAYER_HEIGHT + 36}
+          fit="contain"
+        />
       )}
     </Group>
   );

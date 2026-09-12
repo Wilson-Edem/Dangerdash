@@ -1,12 +1,11 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { GAME_CONFIG } from '../constants/gameConfig';
 
 const SOUND_ASSETS = {
-  // === Music (kept as .mp3 — these are large files) ===
   menu_theme: require('../../assets/audio/music/menu_theme.mp3'),
   gameplay_track_1: require('../../assets/audio/music/gameplay_track_1.mp3'),
   gameplay_track_2: require('../../assets/audio/music/gameplay_track_2.mp3'),
 
-  // === SFX (.wav — zero-latency, matches your folder) ===
   ui_click: require('../../assets/audio/sfx/ui_click.wav'),
   jump: require('../../assets/audio/sfx/jump.wav'),
   power_jump: require('../../assets/audio/sfx/power_jump.wav'),
@@ -32,24 +31,19 @@ export async function initAudioSession() {
       playsInSilentMode: true,
       shouldPlayInBackground: false,
     });
-  } catch (error) {
-    console.warn('Audio session initialization error:', error);
-  }
+  } catch (e) {}
 }
 
 export async function preloadAllAudio() {
   if (isPreloaded) return;
   isPreloaded = true;
-
   for (const key of Object.keys(SOUND_ASSETS)) {
     if (MUSIC_TRACKS.includes(key)) continue;
     try {
       const player = createAudioPlayer(SOUND_ASSETS[key]);
       player.volume = 0.8;
       sfxPlayers[key] = player;
-    } catch (error) {
-      console.warn(`Failed to preload SFX (${key}):`, error);
-    }
+    } catch (e) {}
   }
 }
 
@@ -62,57 +56,68 @@ export function playSFX(key) {
   } catch (e) {}
 }
 
-export async function playMusic(key) {
+// Crossfade into a new music track
+export async function playMusic(key, fadeMs = GAME_CONFIG.MUSIC_FADE_IN_MS) {
   if (currentMusicKey === key && musicPlayer) return;
 
+  // Fade out existing music first
   if (musicPlayer) {
-    try {
-      musicPlayer.pause();
-      musicPlayer.remove();
-    } catch (e) {}
+    const oldPlayer = musicPlayer;
     musicPlayer = null;
     currentMusicKey = null;
+    fadeVolume(oldPlayer, oldPlayer.volume || 0, 0, fadeMs / 2, () => {
+      try {
+        oldPlayer.pause();
+        oldPlayer.remove();
+      } catch (e) {}
+    });
   }
 
   const asset = SOUND_ASSETS[key];
   if (!asset) return;
 
   try {
-    musicPlayer = createAudioPlayer(asset);
-    musicPlayer.loop = true;
-    musicPlayer.volume = 0;
-    musicPlayer.play();
+    const player = createAudioPlayer(asset);
+    player.loop = true;
+    player.volume = 0;
+    player.play();
+    musicPlayer = player;
     currentMusicKey = key;
-    fadeVolume(musicPlayer, 0, 0.5, 800);
-  } catch (error) {
-    console.warn(`Music playback error (${key}):`, error);
-  }
+    fadeVolume(player, 0, GAME_CONFIG.MUSIC_BASE_VOLUME, fadeMs);
+  } catch (e) {}
 }
 
-export function stopMusic() {
+export function stopMusic(fadeMs = GAME_CONFIG.MUSIC_FADE_OUT_MS) {
   if (!musicPlayer) return;
-  const playerToStop = musicPlayer;
-  fadeVolume(playerToStop, playerToStop.volume || 0.5, 0, 400, () => {
+  const p = musicPlayer;
+  musicPlayer = null;
+  currentMusicKey = null;
+  fadeVolume(p, p.volume || GAME_CONFIG.MUSIC_BASE_VOLUME, 0, fadeMs, () => {
     try {
-      playerToStop.pause();
-      playerToStop.remove();
+      p.pause();
+      p.remove();
     } catch (e) {}
-    if (musicPlayer === playerToStop) {
-      musicPlayer = null;
-      currentMusicKey = null;
-    }
   });
 }
 
-export function setMusicRate(rate) {
-  if (musicPlayer) {
-    try {
-      musicPlayer.setPlaybackRate(Math.max(1.0, Math.min(rate, 1.15)));
-    } catch (e) {}
-  }
+// Speed-synced music: rate 1.0 → 1.15 based on game speed
+export function setMusicSpeedSync(currentSpeed) {
+  if (!musicPlayer) return;
+  try {
+    const ratio = Math.min(currentSpeed / GAME_CONFIG.MAX_SPEED, 1);
+    const rate = 1 + ratio * (GAME_CONFIG.MUSIC_MAX_RATE - 1);
+    if (typeof musicPlayer.setPlaybackRate === 'function') {
+      musicPlayer.setPlaybackRate(rate);
+    }
+  } catch (e) {}
 }
 
 function fadeVolume(player, from, to, durationMs, onComplete) {
+  if (durationMs <= 0) {
+    try { player.volume = to; } catch (e) {}
+    if (onComplete) onComplete();
+    return;
+  }
   const steps = 20;
   const stepDuration = durationMs / steps;
   const delta = (to - from) / steps;

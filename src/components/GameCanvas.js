@@ -1,233 +1,120 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import {
-  Canvas,
-  Rect,
-  Group,
-  Text,
-  matchFont,
-  LinearGradient,
-  vec,
-  RoundedRect,
-  useImage,
-  Image,
-} from '@shopify/react-native-skia';
+import { Group, Circle, Image, useImage, BlurMask } from '@shopify/react-native-skia';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
-import Player from './Player';
-import Platform from './Platform';
-import Items from './Items';
-import HUD from './HUD';
 
-const titleFontStyle = { fontFamily: 'monospace', fontSize: 26, fontWeight: 'bold' };
-const titleFont = matchFont(titleFontStyle);
-
-const subFontStyle = { fontFamily: 'monospace', fontSize: 16, fontWeight: 'bold' };
-const subFont = matchFont(subFontStyle);
-
-export default function GameCanvas({
-  playerX,
-  playerY,
-  powerJumpFlash,
-  platforms,
-  items,
-  score,
-  coins,
-  health,
-  hasShield,
-  isGrounded,
-  animFrame,
-  gameState,
-}) {
-  const bgSky = useImage(require('../../assets/images/background/bg_sky_gradient.png'));
-  const bgCityFar = useImage(require('../../assets/images/background/bg_city_far.png'));
-  const bgCityNear = useImage(require('../../assets/images/background/bg_city_near.png'));
-
-  const farOffset = (score * 0.8) % GAME_CONFIG.VIRTUAL_WIDTH;
-  const nearOffset = (score * 2.2) % GAME_CONFIG.VIRTUAL_WIDTH;
+export default function Items({ items }) {
+  const coinSprite = useImage(require('../../assets/images/items/coin_spritesheet.png'));
+  const spikeSprite = useImage(require('../../assets/images/environment/spike_hazard.png'));
+  const boostSprite = useImage(require('../../assets/images/items/boost_pad.png'));
+  const shieldSprite = useImage(require('../../assets/images/items/shield_aura.png'));
 
   return (
-    <View style={styles.canvasContainer}>
-      <Canvas style={styles.canvas}>
-        
-        <Rect x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT}>
-          <LinearGradient
-            start={vec(0, 0)}
-            end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)}
-            colors={[PALETTE.DARK_BG_START, PALETTE.DARK_BG_MID, PALETTE.DARK_BG_END]}
-          />
-        </Rect>
-
-        {bgSky && (
-          <Image
-            image={bgSky}
-            x={0}
-            y={0}
-            width={GAME_CONFIG.VIRTUAL_WIDTH}
-            height={GAME_CONFIG.VIRTUAL_HEIGHT}
-            fit="fill"
-          />
-        )}
-
-        {bgCityFar && (
-          <Group>
+    <Group>
+      {items.map((item) => {
+        // === COIN ===
+        if (item.type === GAME_CONFIG.ITEM_TYPES.COIN) {
+          return coinSprite ? (
             <Image
-              image={bgCityFar}
-              x={-farOffset}
-              y={60}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
-              height={260}
+              key={item.id}
+              image={coinSprite}
+              x={item.x}
+              y={item.y}
+              width={item.width}
+              height={item.height}
+              fit="contain"
+            />
+          ) : null;
+        }
+
+        // === SPIKE ===
+        if (item.type === GAME_CONFIG.ITEM_TYPES.SPIKE) {
+          return spikeSprite ? (
+            <Image
+              key={item.id}
+              image={spikeSprite}
+              x={item.x}
+              y={item.y}
+              width={item.width}
+              height={item.height}
               fit="fill"
             />
+          ) : null;
+        }
+
+        // === BOOST PAD ===
+        if (item.type === GAME_CONFIG.ITEM_TYPES.BOOST_PAD) {
+          return boostSprite ? (
             <Image
-              image={bgCityFar}
-              x={GAME_CONFIG.VIRTUAL_WIDTH - farOffset}
-              y={60}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
-              height={260}
+              key={item.id}
+              image={boostSprite}
+              x={item.x}
+              y={item.y}
+              width={item.width}
+              height={item.height}
               fit="fill"
             />
-          </Group>
-        )}
+          ) : null;
+        }
 
-        {bgCityNear && (
-          <Group>
-            <Image
-              image={bgCityNear}
-              x={-nearOffset}
-              y={100}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
-              height={250}
-              fit="fill"
-            />
-            <Image
-              image={bgCityNear}
-              x={GAME_CONFIG.VIRTUAL_WIDTH - nearOffset}
-              y={100}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
-              height={250}
-              fit="fill"
-            />
-          </Group>
-        )}
+        // === POWER ORB ===
+        if (item.type === GAME_CONFIG.ITEM_TYPES.POWER_ORB) {
+          const isShield = item.powerType === GAME_CONFIG.POWER_TYPES.SHIELD;
+          const centerX = item.x + item.width / 2;
+          const centerY = item.y + item.height / 2;
+          const radius = item.width / 2;
 
-        <Rect
-          x={0}
-          y={GAME_CONFIG.WATER_LEVEL_Y}
-          width={GAME_CONFIG.VIRTUAL_WIDTH}
-          height={GAME_CONFIG.VIRTUAL_HEIGHT - GAME_CONFIG.WATER_LEVEL_Y}
-        >
-          <LinearGradient
-            start={vec(0, GAME_CONFIG.WATER_LEVEL_Y)}
-            end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)}
-            colors={[PALETTE.WATER_TOP, PALETTE.NEON_BLUE, PALETTE.WATER_BOTTOM]}
-          />
-        </Rect>
+          // Shield orbs use the shield_aura.png sprite
+          if (isShield && shieldSprite) {
+            return (
+              <Image
+                key={item.id}
+                image={shieldSprite}
+                x={item.x}
+                y={item.y}
+                width={item.width}
+                height={item.height}
+                fit="contain"
+              />
+            );
+          }
 
-        <Platform platforms={platforms} />
-        <Items items={items} />
+          // All other power types: colored glowing orb fallback
+          const color = PALETTE.POWER_COLORS[item.powerType] || PALETTE.NEON_BLUE;
+          return (
+            <Group key={item.id}>
+              {/* Outer glow halo */}
+              <Circle cx={centerX} cy={centerY} r={radius + 6} color={color} opacity={0.35}>
+                <BlurMask blur={8} style="solid" />
+              </Circle>
 
-        <Player
-          playerX={playerX}
-          playerY={playerY}
-          powerJumpFlash={powerJumpFlash}
-          isGrounded={isGrounded}
-          hasShield={hasShield}
-          animFrame={animFrame}
-        />
+              {/* Solid orb body */}
+              <Circle cx={centerX} cy={centerY} r={radius} color={color} />
 
-        {score > 100 && (
-          <Group opacity={0.35}>
-            <Rect x={(score * 12) % 800} y={80} width={120} height={2} color={PALETTE.NEON_CYAN} />
-            <Rect x={(score * 18) % 800} y={190} width={90} height={1.5} color={PALETTE.WHITE} />
-            <Rect x={(score * 15) % 800} y={280} width={150} height={2} color={PALETTE.NEON_PINK} />
-          </Group>
-        )}
+              {/* Bright white highlight */}
+              <Circle
+                cx={centerX - radius * 0.3}
+                cy={centerY - radius * 0.3}
+                r={radius * 0.35}
+                color={PALETTE.WHITE}
+                opacity={0.9}
+              />
 
-        <Rect
-          x={0}
-          y={0}
-          width={GAME_CONFIG.VIRTUAL_WIDTH}
-          height={GAME_CONFIG.VIRTUAL_HEIGHT}
-          color={PALETTE.NEON_CYAN}
-          opacity={powerJumpFlash}
-        />
+              {/* Dark core ring for depth */}
+              <Circle
+                cx={centerX}
+                cy={centerY}
+                r={radius * 0.65}
+                color={color}
+                style="stroke"
+                strokeWidth={2}
+              />
+            </Group>
+          );
+        }
 
-        <HUD score={score} coins={coins} health={health} hasShield={hasShield} />
-
-        {gameState === GAME_CONFIG.STATE.MENU && (
-          <Group>
-            <RoundedRect
-              x={180}
-              y={160}
-              width={440}
-              height={110}
-              r={12}
-              color={PALETTE.HUD_SURFACE}
-            />
-            <Text
-              x={225}
-              y={210}
-              text="DANGER DASH MOBILE"
-              font={titleFont}
-              color={PALETTE.NEON_CYAN}
-            />
-            <Text
-              x={265}
-              y={245}
-              text="TAP ANYWHERE TO RUN"
-              font={subFont}
-              color={PALETTE.WHITE}
-            />
-          </Group>
-        )}
-
-        {gameState === GAME_CONFIG.STATE.GAMEOVER && (
-          <Group>
-            <RoundedRect
-              x={200}
-              y={150}
-              width={400}
-              height={130}
-              r={12}
-              color={PALETTE.HUD_SURFACE}
-            />
-            <Text
-              x={310}
-              y={200}
-              text="GAME OVER"
-              font={titleFont}
-              color={PALETTE.NEON_PINK}
-            />
-            <Text
-              x={280}
-              y={235}
-              text={`FINAL SCORE: ${score}`}
-              font={subFont}
-              color={PALETTE.WHITE}
-            />
-            <Text
-              x={255}
-              y={260}
-              text="TAP TO TRY AGAIN"
-              font={subFont}
-              color={PALETTE.NEON_CYAN}
-            />
-          </Group>
-        )}
-
-      </Canvas>
-    </View>
+        return null;
+      })}
+    </Group>
   );
 }
-
-const styles = StyleSheet.create({
-  canvasContainer: {
-    width: GAME_CONFIG.VIRTUAL_WIDTH,
-    height: GAME_CONFIG.VIRTUAL_HEIGHT,
-    backgroundColor: '#000000',
-  },
-  canvas: {
-    flex: 1,
-  },
-});

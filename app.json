@@ -1,22 +1,20 @@
 {
   "expo": {
-    "name": "DangerDash Mobile",
-    "slug": "dangerdash",
+    "name": "Danger Dash Mobile",
+    "slug": "danger-dash-mobile",
     "version": "1.0.0",
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
     "android": {
+      "package": "com.vhite.dangerdashmobile",
       "userInterfaceStyle": "dark",
       "adaptiveIcon": {
         "backgroundColor": "#030108"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ],
-      "package": "com.vhite.dangerdashmobile"
+        "android.permission.FOREGROUND_SERVICE"
+      ]
     },
     "assetBundlePatterns": [
       "assets/audio/**/*",
@@ -26,7 +24,6 @@
       "expo-audio",
       "expo-asset",
       "expo-splash-screen",
-      "expo-build-properties",
       [
         "expo-build-properties",
         {
@@ -35,11 +32,6 @@
           }
         }
       ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "e79e6a1e-aefb-4bb3-964d-cf2599a79a77"
-      }
-    }
+    ]
   }
 }

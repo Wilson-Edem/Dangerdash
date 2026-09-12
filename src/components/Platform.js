@@ -5,66 +5,48 @@ import { PALETTE } from '../constants/palette';
 export default function Platform({ platforms }) {
   const platformTile = useImage(require('../../assets/images/environment/platform_tileset.png'));
 
+  // Tile texture size — will repeat across the platform body
+  const TILE_SIZE = 64;
+
   return (
     <Group>
       {platforms.map((plat) => (
         <Group key={plat.id}>
-          {/* Base Rock Structure with Tiled Texture */}
+          {/* Base dark body (behind the texture) */}
           <Rect
             x={plat.x}
             y={plat.y}
             width={plat.width}
             height={plat.height}
             color={PALETTE.PLATFORM_BASE}
-          >
-            {platformTile && (
-              // 🔧 FIX: `fit` controls scaling, `tx`/`ty` control tiling.
-              // `fit="repeat"` is NOT a valid Skia value — this crashed silently.
+          />
+
+          {/* Tiled texture on top of the base */}
+          {platformTile && (
+            <Rect
+              x={plat.x}
+              y={plat.y}
+              width={plat.width}
+              height={plat.height}
+            >
               <ImageShader
                 image={platformTile}
                 fit="none"
-                rect={{ x: 0, y: 0, width: 64, height: 64 }}
+                rect={{ x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE }}
                 tx="repeat"
                 ty="repeat"
               />
-            )}
-          </Rect>
+            </Rect>
+          )}
 
-          {/* Neon Top Running Ledge */}
+          {/* Bright neon top strip */}
           <Rect
             x={plat.x}
             y={plat.y}
             width={plat.width}
-            height={6}
+            height={5}
             color={PALETTE.PLATFORM_TOP_EDGE}
           />
-
-          {/* Under-Edge Ambient Glow Bar */}
-          <Rect
-            x={plat.x}
-            y={plat.y + 6}
-            width={plat.width}
-            height={2}
-            color={PALETTE.NEON_PINK}
-          />
-
-          {/* Embedded Neon Strip Decors */}
-          <Rect
-            x={plat.x + 20}
-            y={plat.y + 35}
-            width={35}
-            height={4}
-            color={PALETTE.NEON_CYAN}
-          />
-          {plat.width > 220 && (
-            <Rect
-              x={plat.x + 130}
-              y={plat.y + 55}
-              width={45}
-              height={4}
-              color={PALETTE.NEON_BLUE}
-            />
-          )}
         </Group>
       ))}
     </Group>

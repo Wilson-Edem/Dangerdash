@@ -1,60 +1,96 @@
 export const GAME_CONFIG = {
-  // Virtual Viewport Dimensions (800x450 Contain Matrix)
   VIRTUAL_WIDTH: 800,
   VIRTUAL_HEIGHT: 450,
 
-  // Game States
   STATE: {
     MENU: 'MENU',
     PLAYING: 'PLAYING',
     GAMEOVER: 'GAMEOVER',
   },
 
-  // Physics & World Mechanics
-  GRAVITY: 0.85,
-  BASE_SPEED: 4.5,
-  MAX_SPEED: 12.0,
-  SPEED_ACCELERATION: 0.0004,
+  // === Physics ===
+  GRAVITY: 1.0,
+  FALL_GRAVITY_MULTIPLIER: 1.45,
+  MAX_FALL_SPEED: 17,
+  BASE_SPEED: 6.0,
+  MAX_SPEED: 14.0,
+  SPEED_ACCELERATION: 0.0006,
+  COIN_SPEED_BONUS: 0.05,
 
-  // Player Stats & Collision
-  PLAYER_START_X: 120,
-  PLAYER_START_Y: 200,
-  PLAYER_WIDTH: 36,
-  PLAYER_HEIGHT: 48,
+  // === Player ===
+  PLAYER_START_X: 280,  // 35% of 800
+  PLAYER_START_Y: 160,
+  PLAYER_WIDTH: 44,
+  PLAYER_HEIGHT: 60,
   MAX_HEALTH: 3,
   INVINCIBILITY_FRAMES: 60,
 
-  // Jump Mechanics
-  JUMP_FORCE: -15.2,
+  // === Jump ===
+  JUMP_FORCE: -15.5,
   POWER_JUMP_FORCE: -25.0,
   MAX_MIDAIR_JUMPS: 1,
   DOUBLE_TAP_WINDOW: 300,
   POWER_JUMP_COOLDOWN: 400,
 
-  // Platform & Terrain Physics
-  GROUND_Y: 340,
+  // === Platforms ===
+  GROUND_Y: 290,
   PLATFORM_HEIGHT: 110,
-  MIN_PLATFORM_WIDTH: 160,
-  MAX_PLATFORM_WIDTH: 380,
-  STANDARD_GAP: 120,
-  MAX_GAP: 190,
+  MIN_PLATFORM_WIDTH: 140,
+  MAX_PLATFORM_WIDTH: 400,
+  STANDARD_GAP: 110,
+  MAX_GAP: 220,
 
-  // Item Types & Dimensions
+  // === Items ===
   ITEM_TYPES: {
     COIN: 'COIN',
     SPIKE: 'SPIKE',
     BOOST_PAD: 'BOOST_PAD',
-    SHIELD: 'SHIELD',
+    POWER_ORB: 'POWER_ORB',
   },
-  COIN_SIZE: 22,
-  SPIKE_WIDTH: 28,
-  SPIKE_HEIGHT: 22,
-  BOOST_PAD_WIDTH: 42,
-  BOOST_PAD_HEIGHT: 10,
-  SHIELD_ITEM_SIZE: 26,
+
+  COIN_SIZE: 24,
+  SPIKE_WIDTH: 32,
+  SPIKE_HEIGHT: 26,
+  BOOST_PAD_WIDTH: 48,
+  BOOST_PAD_HEIGHT: 14,
+  POWER_ORB_SIZE: 30,
   BOOST_SPEED_MULTIPLIER: 1.4,
 
-  // Hazards & Boundaries
-  WATER_LEVEL_Y: 390,
-  FALL_DEATH_Y: 450,
+  // === Power-up types ===
+  POWER_TYPES: {
+    SPEED: 'SPEED',
+    FLOAT: 'FLOAT',
+    MAGNET: 'MAGNET',
+    SHIELD: 'SHIELD',
+    GRAVITY_FLIP: 'GRAVITY_FLIP',
+    SCORE_DOUBLER: 'SCORE_DOUBLER',
+  },
+
+  POWER_DURATION: {
+    SPEED: 300,
+    FLOAT: 300,
+    MAGNET: 360,
+    SHIELD: 0,
+    GRAVITY_FLIP: 180,
+    SCORE_DOUBLER: 300,
+  },
+
+  SPEED_POWER_BOOST: 3.5,
+  FLOAT_GRAVITY_MULT: 0.45,
+  FLOAT_JUMP_MULT: 0.75,
+  MAGNET_RADIUS: 180,
+
+  // === Combo ===
+  COMBO_TIMEOUT_FRAMES: 300,  // 5s @ 60fps
+  COMBO_SCORE_BONUS: 0.2,
+
+  // === Water ===
+  WATER_LEVEL_Y: 400,
+  FALL_DEATH_Y: 470,
+
+  // === Music ===
+  MUSIC_BASE_VOLUME: 0.5,
+  MUSIC_FADE_IN_MS: 800,
+  MUSIC_FADE_OUT_MS: 600,
+  MUSIC_MAX_RATE: 1.15,
 };

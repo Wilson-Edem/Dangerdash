@@ -5,18 +5,9 @@ import { useGameLoop } from '../utils/useGameLoop';
 
 export default function GameScreen() {
   const {
-    gameState,
-    score,
-    coins,
-    health,
-    hasShield,
-    isGrounded,
-    animFrame,
-    playerX,
-    playerY,
-    powerJumpFlash,
-    platforms,
-    items,
+    gameState, score, coins, health, hasShield, isGrounded, animFrame,
+    playerX, playerY, powerJumpFlash, platforms, items,
+    activePower, powerTimer, combo, gravityFlipped,
     handleScreenTap,
   } = useGameLoop();
 
@@ -36,6 +27,10 @@ export default function GameScreen() {
           isGrounded={isGrounded}
           animFrame={animFrame}
           gameState={gameState}
+          activePower={activePower}
+          powerTimer={powerTimer}
+          combo={combo}
+          gravityFlipped={gravityFlipped}
         />
       </View>
     </TouchableWithoutFeedback>

@@ -10,32 +10,30 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const { scale, translateX, translateY, virtualWidth, virtualHeight } = useResponsiveCanvas();
 
-  // Boot: audio session + preload + landscape lock
   useEffect(() => {
-    async function bootAudio() {
+    let mounted = true;
+
+    async function boot() {
       await initAudioSession();
       await preloadAllAudio();
+      if (mounted) {
+        // Menu theme plays DURING the loading screen
+        await playMusic('menu_theme');
+      }
     }
-    bootAudio();
+    boot();
 
     async function lockLandscape() {
       try {
         await ScreenOrientation.lockAsync(
           ScreenOrientation.OrientationLock.LANDSCAPE
         );
-      } catch (e) {
-        console.warn('Orientation lock notice:', e);
-      }
+      } catch (e) {}
     }
     lockLandscape();
-  }, []);
 
-  // Start menu music once loading finishes
-  useEffect(() => {
-    if (!isLoading) {
-      playMusic('menu_theme');
-    }
-  }, [isLoading]);
+    return () => { mounted = false; };
+  }, []);
 
   if (isLoading) {
     return (
@@ -55,11 +53,7 @@ export default function App() {
           {
             width: virtualWidth,
             height: virtualHeight,
-            transform: [
-              { translateX },
-              { translateY },
-              { scale },
-            ],
+            transform: [{ translateX }, { translateY }, { scale }],
           },
         ]}
       >
@@ -70,10 +64,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
+  rootContainer: { flex: 1, backgroundColor: '#000000' },
   viewportFrame: {
     position: 'absolute',
     backgroundColor: '#030108',
