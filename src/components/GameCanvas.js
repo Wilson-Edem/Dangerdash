@@ -1,120 +1,147 @@
 import React from 'react';
-import { Group, Circle, Image, useImage, BlurMask } from '@shopify/react-native-skia';
+import { StyleSheet, View } from 'react-native';
+import {
+  Canvas,
+  Rect,
+  Group,
+  LinearGradient,
+  vec,
+  useImage,
+  Image,
+  ImageShader,
+} from '@shopify/react-native-skia';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
+import Player from './Player';
+import Platform from './Platform';
+import Items from './Items';
 
-export default function Items({ items }) {
-  const coinSprite = useImage(require('../../assets/images/items/coin_spritesheet.png'));
-  const spikeSprite = useImage(require('../../assets/images/environment/spike_hazard.png'));
-  const boostSprite = useImage(require('../../assets/images/items/boost_pad.png'));
-  const shieldSprite = useImage(require('../../assets/images/items/shield_aura.png'));
+export default function GameCanvas({
+  playerX,
+  playerY,
+  powerJumpFlash,
+  platforms,
+  items,
+  score,
+  gameState,
+  isGrounded,
+  animFrame,
+  activePower,
+  gravityFlipped,
+  hasShield,
+  deathFadeAlpha,
+}) {
+  const bgSky = useImage(require('../../assets/images/background/bg_sky_gradient.png'));
+  const bgCityFar = useImage(require('../../assets/images/background/bg_city_far.png'));
+  const bgCityNear = useImage(require('../../assets/images/background/bg_city_near.png'));
+  const waterTile = useImage(require('../../assets/images/environment/water_fluid_tile.png'));
+
+  const farOffset = (score * 0.8) % GAME_CONFIG.VIRTUAL_WIDTH;
+  const nearOffset = (score * 2.2) % GAME_CONFIG.VIRTUAL_WIDTH;
+
+  const waterHeight = GAME_CONFIG.VIRTUAL_HEIGHT - GAME_CONFIG.WATER_LEVEL_Y;
+  const WATER_TILE_W = 200;
 
   return (
-    <Group>
-      {items.map((item) => {
-        // === COIN ===
-        if (item.type === GAME_CONFIG.ITEM_TYPES.COIN) {
-          return coinSprite ? (
-            <Image
-              key={item.id}
-              image={coinSprite}
-              x={item.x}
-              y={item.y}
-              width={item.width}
-              height={item.height}
-              fit="contain"
+    <View style={styles.canvasContainer}>
+      <Canvas style={styles.canvas}>
+
+        {/* Base gradient */}
+        <Rect x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT}>
+          <LinearGradient
+            start={vec(0, 0)}
+            end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)}
+            colors={[PALETTE.BG_TOP, PALETTE.BG_MID, PALETTE.BG_BOTTOM]}
+          />
+        </Rect>
+
+        {/* Sky */}
+        {bgSky && (
+          <Image
+            image={bgSky}
+            x={0}
+            y={0}
+            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            height={GAME_CONFIG.VIRTUAL_HEIGHT}
+            fit="cover"
+          />
+        )}
+
+        {/* Far city */}
+        {bgCityFar && (
+          <Group>
+            <Image image={bgCityFar} x={-farOffset} y={170} width={GAME_CONFIG.VIRTUAL_WIDTH} height={170} fit="fill" />
+            <Image image={bgCityFar} x={GAME_CONFIG.VIRTUAL_WIDTH - farOffset} y={170} width={GAME_CONFIG.VIRTUAL_WIDTH} height={170} fit="fill" />
+          </Group>
+        )}
+
+        {/* Near city */}
+        {bgCityNear && (
+          <Group>
+            <Image image={bgCityNear} x={-nearOffset} y={210} width={GAME_CONFIG.VIRTUAL_WIDTH} height={170} fit="fill" />
+            <Image image={bgCityNear} x={GAME_CONFIG.VIRTUAL_WIDTH - nearOffset} y={210} width={GAME_CONFIG.VIRTUAL_WIDTH} height={170} fit="fill" />
+          </Group>
+        )}
+
+        {/* Water */}
+        {waterTile ? (
+          <Rect
+            x={0}
+            y={GAME_CONFIG.WATER_LEVEL_Y}
+            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            height={waterHeight}
+          >
+            <ImageShader
+              image={waterTile}
+              fit="none"
+              rect={{ x: 0, y: 0, width: WATER_TILE_W, height: waterHeight }}
+              tx="repeat"
+              ty="clamp"
             />
-          ) : null;
-        }
+          </Rect>
+        ) : (
+          <Rect
+            x={0}
+            y={GAME_CONFIG.WATER_LEVEL_Y}
+            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            height={waterHeight}
+            color={PALETTE.WATER_COLOR}
+          />
+        )}
 
-        // === SPIKE ===
-        if (item.type === GAME_CONFIG.ITEM_TYPES.SPIKE) {
-          return spikeSprite ? (
-            <Image
-              key={item.id}
-              image={spikeSprite}
-              x={item.x}
-              y={item.y}
-              width={item.width}
-              height={item.height}
-              fit="fill"
-            />
-          ) : null;
-        }
+        <Platform platforms={platforms} />
+        <Items items={items} />
 
-        // === BOOST PAD ===
-        if (item.type === GAME_CONFIG.ITEM_TYPES.BOOST_PAD) {
-          return boostSprite ? (
-            <Image
-              key={item.id}
-              image={boostSprite}
-              x={item.x}
-              y={item.y}
-              width={item.width}
-              height={item.height}
-              fit="fill"
-            />
-          ) : null;
-        }
+        <Player
+          playerX={playerX}
+          playerY={playerY}
+          powerJumpFlash={powerJumpFlash}
+          isGrounded={isGrounded}
+          hasShield={hasShield}
+          animFrame={animFrame}
+          activePower={activePower}
+          gravityFlipped={gravityFlipped}
+        />
 
-        // === POWER ORB ===
-        if (item.type === GAME_CONFIG.ITEM_TYPES.POWER_ORB) {
-          const isShield = item.powerType === GAME_CONFIG.POWER_TYPES.SHIELD;
-          const centerX = item.x + item.width / 2;
-          const centerY = item.y + item.height / 2;
-          const radius = item.width / 2;
+        <Rect
+          x={0}
+          y={0}
+          width={GAME_CONFIG.VIRTUAL_WIDTH}
+          height={GAME_CONFIG.VIRTUAL_HEIGHT}
+          color="#0A0005"
+          opacity={deathFadeAlpha}
+        />
 
-          // Shield orbs use the shield_aura.png sprite
-          if (isShield && shieldSprite) {
-            return (
-              <Image
-                key={item.id}
-                image={shieldSprite}
-                x={item.x}
-                y={item.y}
-                width={item.width}
-                height={item.height}
-                fit="contain"
-              />
-            );
-          }
-
-          // All other power types: colored glowing orb fallback
-          const color = PALETTE.POWER_COLORS[item.powerType] || PALETTE.NEON_BLUE;
-          return (
-            <Group key={item.id}>
-              {/* Outer glow halo */}
-              <Circle cx={centerX} cy={centerY} r={radius + 6} color={color} opacity={0.35}>
-                <BlurMask blur={8} style="solid" />
-              </Circle>
-
-              {/* Solid orb body */}
-              <Circle cx={centerX} cy={centerY} r={radius} color={color} />
-
-              {/* Bright white highlight */}
-              <Circle
-                cx={centerX - radius * 0.3}
-                cy={centerY - radius * 0.3}
-                r={radius * 0.35}
-                color={PALETTE.WHITE}
-                opacity={0.9}
-              />
-
-              {/* Dark core ring for depth */}
-              <Circle
-                cx={centerX}
-                cy={centerY}
-                r={radius * 0.65}
-                color={color}
-                style="stroke"
-                strokeWidth={2}
-              />
-            </Group>
-          );
-        }
-
-        return null;
-      })}
-    </Group>
+      </Canvas>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  canvasContainer: {
+    width: GAME_CONFIG.VIRTUAL_WIDTH,
+    height: GAME_CONFIG.VIRTUAL_HEIGHT,
+    backgroundColor: '#030408',
+  },
+  canvas: { flex: 1 },
+});
