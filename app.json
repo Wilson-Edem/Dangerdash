@@ -26,7 +26,15 @@
       "expo-audio",
       "expo-asset",
       "expo-splash-screen",
-      "expo-build-properties"
+      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enablePngCrunchInReleaseBuilds": false
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
