@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, StatusBar } from 'react-native';
+import { StyleSheet, View, StatusBar, useWindowDimensions } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -41,6 +41,7 @@ function GameRoot() {
   const [saveData, setSaveData] = useState(null);
   const [gameKey, setGameKey] = useState(0);
   const { scale, translateX, translateY, virtualWidth, virtualHeight } = useResponsiveCanvas();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
   const upgradeLevelsRef = useRef({ extra_jump: 0, magnet_range: 0, slow_fall: 0 });
   const settingsRef = useRef({ soundOn: true, musicOn: true, vibrationOn: true });
@@ -194,11 +195,15 @@ function GameRoot() {
     }
   };
 
-  if (!themeReady) return null;
+  if (!themeReady) {
+    // Keep the splash screen visible until the theme is ready
+    return null;
+  }
 
   return (
     <View style={styles.rootContainer}>
       <StatusBar hidden />
+      {/* This view is the fixed 800x450 game world that scales to fit the screen */}
       <View
         style={[
           styles.viewportFrame,
@@ -225,9 +230,16 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  rootContainer: { flex: 1, backgroundColor: '#000000' },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
   viewportFrame: {
+    // Use absolute positioning to ensure it's positioned correctly within the root
     position: 'absolute',
+    // The top-left corner of the viewport frame
+    top: 0,
+    left: 0,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',

@@ -1,40 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Animated, Image, Easing } from 'react-native';
+import {
+  StyleSheet, Text, View, Animated, Image, Easing, Dimensions,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Canvas, Circle, Group } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 
-// Static asset mapping for APK preloader
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
 const PREVIEW_IMAGES = [
   require('../../assets/images/preview1.png'),
   require('../../assets/images/preview2.png'),
   require('../../assets/images/preview3.png'),
 ];
 
+const PARTICLES = Array.from({ length: 40 }, (_, i) => ({
+  id: i,
+  x: Math.random() * SCREEN_W,
+  y: Math.random() * SCREEN_H,
+  r: Math.random() * 1.8 + 0.4,
+  opacity: Math.random() * 0.5 + 0.15,
+  color: Math.random() < 0.6 ? '#00F0FF' : Math.random() < 0.5 ? '#A855F7' : '#FF007F',
+}));
+
 export default function LoadingScreen({ onFinishLoading }) {
-  // 0 = Stage 1 (Title Card), 1 = Stage 2 (Gameplay Preview Carousel)
   const [stage, setStage] = useState(0);
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [progressPercent, setProgressPercent] = useState(0);
 
-  // 🔧 Fix: Ref to track current preview index without stale closure
   const currentPreviewRef = useRef(0);
 
-  // Animation values
   const titleFade = useRef(new Animated.Value(0)).current;
   const titleGlow = useRef(new Animated.Value(0.3)).current;
+  const titleScale = useRef(new Animated.Value(0.92)).current;
   const stage2Fade = useRef(new Animated.Value(0)).current;
   const progressBarAnim = useRef(new Animated.Value(0)).current;
   const imageFade = useRef(new Animated.Value(1)).current;
+  const gridShift = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Stage 1: Fade in title card & start text glow pulse
-    Animated.timing(titleFade, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(titleFade, { toValue: 1, duration: 900, useNativeDriver: true }),
+      Animated.timing(titleScale, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
 
-       // Title glow pulse loop (opacity only — textShadowRadius can't be animated natively)
     Animated.loop(
       Animated.sequence([
         Animated.timing(titleGlow, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -42,42 +51,33 @@ export default function LoadingScreen({ onFinishLoading }) {
       ])
     ).start();
 
-    // Transition from Stage 1 -> Stage 2 after 2 seconds
-    const stageTimer = setTimeout(() => {
-      transitionToStage2();
-    }, 2000);
+    Animated.loop(
+      Animated.timing(gridShift, { toValue: 1, duration: 8000, easing: Easing.linear, useNativeDriver: true })
+    ).start();
 
-    return () => clearTimeout(stageTimer);
+    const timer = setTimeout(transitionToStage2, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   const transitionToStage2 = () => {
     setStage(1);
 
-    // Smooth fade into Stage 2
-    Animated.timing(stage2Fade, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(stage2Fade, { toValue: 1, duration: 800, useNativeDriver: true }).start();
 
-    // 🔧 Fix: Store listener reference for proper cleanup
     const listenerId = progressBarAnim.addListener(({ value }) => {
-      const currentPct = Math.floor(value * 100);
-      setProgressPercent(currentPct);
+      const pct = Math.floor(value * 100);
+      setProgressPercent(pct);
 
-      // Determine new preview index based on progress
       let newIndex = 0;
-      if (currentPct >= 66) newIndex = 2;
-      else if (currentPct >= 33) newIndex = 1;
+      if (pct >= 66) newIndex = 2;
+      else if (pct >= 33) newIndex = 1;
 
-      // 🔧 Fix: Compare against the ref (not stale state)
       if (newIndex !== currentPreviewRef.current) {
         currentPreviewRef.current = newIndex;
         swapPreviewImage(newIndex);
       }
     });
 
-    // Drive progress bar from 0% to 100% over 3.5 seconds
     Animated.timing(progressBarAnim, {
       toValue: 1,
       duration: 3500,
@@ -85,58 +85,77 @@ export default function LoadingScreen({ onFinishLoading }) {
       useNativeDriver: false,
     }).start(() => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // 🔧 Fix: Clean up listener when done
       progressBarAnim.removeListener(listenerId);
-      if (onFinishLoading) {
-        onFinishLoading();
-      }
+      if (onFinishLoading) onFinishLoading();
     });
 
-    // 🔧 Fix: Also clean up if unmounted mid-animation
-    return () => {
-      progressBarAnim.removeListener(listenerId);
-    };
+    return () => progressBarAnim.removeListener(listenerId);
   };
 
   const swapPreviewImage = (newIndex) => {
-    Animated.timing(imageFade, {
-      toValue: 0.2,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
+    Animated.timing(imageFade, { toValue: 0.2, duration: 250, useNativeDriver: true }).start(() => {
       setActivePreviewIndex(newIndex);
-      Animated.timing(imageFade, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(imageFade, { toValue: 1, duration: 350, useNativeDriver: true }).start();
     });
   };
 
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#030108', '#0c0418', '#020005']} style={styles.background}>
+        <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Group>
+            {PARTICLES.map((p) => (
+              <Circle key={p.id} cx={p.x} cy={p.y} r={p.r} color={p.color} opacity={p.opacity} />
+            ))}
+          </Group>
+        </Canvas>
 
-        {/* STAGE 1: BRANDED TITLE CARD */}
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              opacity: 0.06,
+              transform: [
+                {
+                  translateX: gridShift.interpolate({ inputRange: [0, 1], outputRange: [0, 80] }),
+                },
+              ],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          {Array.from({ length: 20 }).map((_, i) => (
+            <View key={i} style={[styles.gridLine, { left: i * 60 }]} />
+          ))}
+        </Animated.View>
+
         {stage === 0 && (
-          <Animated.View style={[styles.titleStage, { opacity: titleFade }]}>
+          <Animated.View
+            style={[
+              styles.titleStage,
+              { opacity: titleFade, transform: [{ scale: titleScale }] },
+            ]}
+          >
             <Animated.Text
-  style={[
-    styles.mainTitle,
-    { opacity: titleGlow },
-  ]}
->
-              DANGERDASH MOBILE
+              style={[
+                styles.mainTitle,
+                { opacity: titleGlow },
+              ]}
+            >
+              DANGER DASH
             </Animated.Text>
-            <Text style={styles.subTitle}>by Vhite</Text>
+            <Text style={styles.subTitle}>MOBILE • BY VHITE</Text>
+
+            <View style={styles.loadingDotsRow}>
+              <Animated.View style={[styles.dot, { opacity: titleGlow }]} />
+              <Animated.View style={[styles.dot, { opacity: titleGlow }]} />
+              <Animated.View style={[styles.dot, { opacity: titleGlow }]} />
+            </View>
           </Animated.View>
         )}
 
-        {/* STAGE 2: GAMEPLAY PREVIEW CAROUSEL & PROGRESS BAR */}
         {stage === 1 && (
           <Animated.View style={[styles.stage2Container, { opacity: stage2Fade }]}>
-
-            {/* Background Image Preview Card */}
             <View style={styles.previewCardFrame}>
               <Animated.Image
                 source={PREVIEW_IMAGES[activePreviewIndex]}
@@ -149,7 +168,6 @@ export default function LoadingScreen({ onFinishLoading }) {
               />
             </View>
 
-            {/* Bottom Progress Controls */}
             <View style={styles.progressSection}>
               <View style={styles.textRow}>
                 <Text style={styles.loadingLabel}>LOADING ASSETS & AUDIO...</Text>
@@ -170,20 +188,15 @@ export default function LoadingScreen({ onFinishLoading }) {
                 />
               </View>
             </View>
-
           </Animated.View>
         )}
-
       </LinearGradient>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#030108',
-  },
+  container: { flex: 1, backgroundColor: '#030108' },
   background: {
     flex: 1,
     justifyContent: 'center',
@@ -191,27 +204,43 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  titleStage: {
-    alignItems: 'center',
+  gridLine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: '#00F0FF',
   },
+  titleStage: { alignItems: 'center' },
   mainTitle: {
-  fontSize: 52,
-  fontWeight: '900',
-  color: '#FFFFFF',
-  letterSpacing: 6,
-  textTransform: 'uppercase',
-  textShadowColor: '#00F0FF',
-  textShadowOffset: { width: 0, height: 0 },
-  textShadowRadius: 18,
-  fontFamily: 'sans-serif-condensed',
-},
+    fontSize: 52,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 6,
+    textTransform: 'uppercase',
+    textShadowColor: '#00F0FF',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 18, // Static value to avoid warning
+    fontFamily: 'sans-serif-condensed',
+  },
   subTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#D8B4FE',
+    color: '#A855F7',
     letterSpacing: 5,
-    marginTop: 10,
-    textTransform: 'lowercase',
+    marginTop: 12,
+    textTransform: 'uppercase',
+  },
+  loadingDotsRow: {
+    flexDirection: 'row',
+    marginTop: 30,
+    gap: 10,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00F0FF',
   },
   stage2Container: {
     width: '100%',
@@ -220,19 +249,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   previewCardFrame: {
-    width: '100%',
-    height: '100%',
+    width: '72%',
+    height: '60%',
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#3B0764',
+    borderColor: '#00F0FF',
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#090314',
+    shadowColor: '#00F0FF',
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
   },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
+  previewImage: { width: '100%', height: '100%' },
   imageOverlayGradient: {
     position: 'absolute',
     left: 0,
@@ -240,10 +271,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '40%',
   },
-  progressSection: {
-    width: '75%',
-    marginTop: 18,
-  },
+  progressSection: { width: '72%', marginTop: 22 },
   textRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -271,5 +299,8 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     backgroundColor: '#00FFCC',
+    shadowColor: '#00FFCC',
+    shadowRadius: 8,
+    shadowOpacity: 1,
   },
 });

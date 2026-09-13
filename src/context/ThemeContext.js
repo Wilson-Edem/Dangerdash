@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEMES } from '../constants/themes';
 
-const ThemeContext = createContext(null);
+const ThemeContext = createContext(undefined);
 const STORAGE_KEY = '@danger_dash_theme';
 
 export function ThemeProvider({ children }) {
@@ -45,6 +45,14 @@ export function ThemeProvider({ children }) {
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  // Fail-safe: return default theme if context is not yet available
+  if (!ctx) {
+    return {
+      theme: THEMES.cyberpunk,
+      themeKey: 'cyberpunk',
+      setTheme: () => {},
+      isReady: false,
+    };
+  }
   return ctx;
 }
