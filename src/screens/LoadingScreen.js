@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   previewCardFrame: {
-    width: '75%',
-    height: '65%',
+    width: '100%',
+    height: '100%',
     borderRadius: 14,
     borderWidth: 2,
     borderColor: '#3B0764',
