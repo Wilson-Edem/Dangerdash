@@ -46,8 +46,7 @@
         "expo-navigation-bar",
         {
           "backgroundColor": "#000000",
-          "style": "light",
-          "visibility": "hidden"
+          "style": "light"
         }
       ],
       [
