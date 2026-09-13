@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 import { getDailyChallenges } from '../constants/challenges';
 import { loadSave, writeSave } from '../utils/saveManager';
 
@@ -9,6 +10,7 @@ function todaySeed() {
 }
 
 export default function ChallengesScreen({ onBack }) {
+  const { theme } = useTheme();
   const [save, setSave] = useState(null);
   const challenges = getDailyChallenges(todaySeed());
 
@@ -26,27 +28,41 @@ export default function ChallengesScreen({ onBack }) {
   if (!save) return null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.screenBg }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}><Text style={styles.back}>← BACK</Text></TouchableOpacity>
-        <Text style={styles.coins}>🪙 {save.totalCoins}</Text>
+        <TouchableOpacity onPress={onBack}>
+          <Text style={[styles.back, { color: theme.colors.buttonText }]}>← BACK</Text>
+        </TouchableOpacity>
+        <Text style={[styles.coins, { color: theme.colors.coinGold }]}>🪙 {save.totalCoins}</Text>
       </View>
 
-      <Text style={styles.title}>DAILY VHITE CHALLENGES</Text>
-      <Text style={styles.subtitle}>Reset every 24 hours</Text>
+      <Text style={[styles.title, { color: theme.colors.titleText }]}>DAILY CHALLENGES</Text>
+      <Text style={[styles.subtitle, { color: theme.colors.subtitleText }]}>Reset every 24 hours</Text>
 
       <ScrollView contentContainerStyle={styles.list}>
         {challenges.map((ch) => {
           const claimed = save.challengeCompletedIds.includes(ch.id);
-          const progress = save.challengeProgress[ch.id] || 0;
+          const progress = (save.challengeProgress && save.challengeProgress[ch.id]) || 0;
           const done = progress >= ch.target;
 
           return (
-            <View key={ch.id} style={[styles.card, done && styles.cardDone]}>
-              <Text style={styles.cardTitle}>{ch.text}</Text>
-              <Text style={styles.cardProgress}>{Math.min(progress, ch.target)} / {ch.target}</Text>
-              <TouchableOpacity style={[styles.claimBtn, (claimed || !done) && styles.claimDisabled]} disabled={claimed || !done} onPress={() => claim(ch)}>
-                <Text style={styles.claimText}>
+            <View
+              key={ch.id}
+              style={[styles.card, { borderColor: done ? theme.colors.buttonBorder : '#333' }]}
+            >
+              <Text style={[styles.cardTitle, { color: theme.colors.hudText }]}>{ch.text}</Text>
+              <Text style={[styles.cardProgress, { color: theme.colors.subtitleText }]}>
+                {Math.min(progress, ch.target)} / {ch.target}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.claimBtn,
+                  { backgroundColor: (claimed || !done) ? '#333' : theme.colors.buttonBorder },
+                ]}
+                disabled={claimed || !done}
+                onPress={() => claim(ch)}
+              >
+                <Text style={[styles.claimText, { color: (claimed || !done) ? '#888' : theme.colors.screenBg }]}>
                   {claimed ? '✓ CLAIMED' : done ? `CLAIM 🪙 ${ch.reward}` : `🪙 ${ch.reward}`}
                 </Text>
               </TouchableOpacity>
@@ -59,18 +75,16 @@ export default function ChallengesScreen({ onBack }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#030108', padding: 20 },
+  container: { flex: 1, padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  back: { color: '#00F0FF', fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace' },
-  coins: { color: '#FFD700', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' },
-  title: { color: '#00F0FF', fontSize: 24, fontWeight: '900', fontFamily: 'monospace', letterSpacing: 3 },
-  subtitle: { color: '#A855F7', fontSize: 12, fontFamily: 'monospace', marginBottom: 16 },
+  back: { fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace' },
+  coins: { fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' },
+  title: { fontSize: 24, fontWeight: '900', fontFamily: 'monospace', letterSpacing: 3 },
+  subtitle: { fontSize: 12, fontFamily: 'monospace', marginBottom: 16 },
   list: { paddingBottom: 40 },
-  card: { backgroundColor: 'rgba(10, 20, 30, 0.9)', borderWidth: 2, borderColor: '#333', borderRadius: 10, padding: 14, marginBottom: 12 },
-  cardDone: { borderColor: '#00FF66' },
-  cardTitle: { color: '#fff', fontSize: 15, fontWeight: 'bold', fontFamily: 'monospace' },
-  cardProgress: { color: '#A855F7', fontSize: 13, fontFamily: 'monospace', marginTop: 6 },
-  claimBtn: { marginTop: 10, backgroundColor: '#00F0FF', borderRadius: 6, padding: 10, alignItems: 'center' },
-  claimDisabled: { backgroundColor: '#333' },
-  claimText: { color: '#000', fontWeight: 'bold', fontFamily: 'monospace' },
+  card: { borderWidth: 2, borderRadius: 10, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 15, fontWeight: 'bold', fontFamily: 'monospace' },
+  cardProgress: { fontSize: 13, fontFamily: 'monospace', marginTop: 6 },
+  claimBtn: { marginTop: 10, borderRadius: 6, padding: 10, alignItems: 'center' },
+  claimText: { fontWeight: 'bold', fontFamily: 'monospace' },
 });

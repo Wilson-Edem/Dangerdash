@@ -1,11 +1,20 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, View, Text, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import GameCanvas from '../components/GameCanvas';
 import { useGameLoop } from '../utils/useGameLoop';
 import { GAME_CONFIG } from '../constants/gameConfig';
+import { useTheme } from '../context/ThemeContext';
 import { PALETTE } from '../constants/palette';
 
-export default function GameScreen({ onGameOver }) {
+export default function GameScreen({
+  onGameOver,
+  onPause,
+  upgradeLevels,
+  settings,
+  skinColors,
+}) {
+  const { theme } = useTheme();
+
   const {
     gameState,
     score,
@@ -20,12 +29,12 @@ export default function GameScreen({ onGameOver }) {
     platforms,
     items,
     activePower,
-    powerTimer,
     combo,
     gravityFlipped,
     deathFadeAlpha,
+    powerName,
     handleScreenTap,
-  } = useGameLoop(onGameOver);
+  } = useGameLoop({ onGameOver, upgradeLevels, settings });
 
   const showHUD =
     gameState === GAME_CONFIG.STATE.PLAYING ||
@@ -35,7 +44,6 @@ export default function GameScreen({ onGameOver }) {
     <TouchableWithoutFeedback onPress={handleScreenTap}>
       <View style={styles.touchContainer}>
 
-        {/* SKIA CANVAS — game world */}
         <GameCanvas
           playerX={playerX}
           playerY={playerY}
@@ -50,57 +58,75 @@ export default function GameScreen({ onGameOver }) {
           animFrame={animFrame}
           gameState={gameState}
           activePower={activePower}
-          powerTimer={powerTimer}
           combo={combo}
           gravityFlipped={gravityFlipped}
           deathFadeAlpha={deathFadeAlpha}
+          skinColors={skinColors}
         />
 
-        {/* HUD OVERLAY */}
         {showHUD && (
-          <View style={styles.hudTop} pointerEvents="none">
-            <View>
-              <Text style={styles.hudText}>
-                SCORE: {String(score).padStart(6, '0')}
-              </Text>
-              <Text style={styles.hudText}>COINS: {coins}</Text>
-              <Text style={styles.hudText}>
-                HP: {'❤️ '.repeat(Math.max(0, health))}
-              </Text>
-            </View>
-            <View style={styles.alignRight}>
-              {combo > 0 && (
-                <Text style={styles.comboText}>COMBO x{combo}</Text>
-              )}
-              {activePower && (
-                <Text
-                  style={[
-                    styles.powerText,
-                    { color: PALETTE.POWER_COLORS[activePower] || PALETTE.NEON_CYAN },
-                  ]}
-                >
-                  {PALETTE.POWER_ICONS[activePower]} {activePower}
+          <>
+            <View style={styles.hudTop} pointerEvents="none">
+              <View>
+                <Text style={[styles.hudText, { color: theme.colors.hudText }]}>
+                  SCORE: {String(score).padStart(6, '0')}
                 </Text>
-              )}
+                <Text style={[styles.hudText, { color: theme.colors.hudText }]}>
+                  COINS: {coins}
+                </Text>
+                <Text style={[styles.hudText, { color: theme.colors.hudText }]}>
+                  HP: {'❤️ '.repeat(Math.max(0, health))}
+                </Text>
+              </View>
+              <View style={styles.alignRight}>
+                {combo > 0 && (
+                  <Text style={[styles.comboText, { color: theme.colors.comboText }]}>
+                    COMBO x{combo}
+                  </Text>
+                )}
+                {activePower && (
+                  <Text
+                    style={[
+                      styles.powerText,
+                      { color: PALETTE.POWER_COLORS[activePower] || theme.colors.powerText },
+                    ]}
+                  >
+                    {PALETTE.POWER_ICONS[activePower]} {activePower}
+                  </Text>
+                )}
+                {powerName ? (
+                  <Text style={[styles.powerName, { color: theme.colors.powerText }]}>
+                    {powerName}
+                  </Text>
+                ) : null}
+              </View>
             </View>
-          </View>
+
+            {/* Pause button */}
+            {gameState === GAME_CONFIG.STATE.PLAYING && onPause && (
+              <TouchableOpacity
+                style={[styles.pauseBtn, { borderColor: theme.colors.buttonBorder }]}
+                onPress={onPause}
+              >
+                <Text style={[styles.pauseText, { color: theme.colors.buttonText }]}>❚❚</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
-        {/* MENU OVERLAY */}
         {gameState === GAME_CONFIG.STATE.MENU && (
-          <View style={styles.centerOverlay} pointerEvents="none">
-            <Text style={styles.titleText}>DANGER DASH</Text>
-            <Text style={styles.subTitleText}>MOBILE • BY VHITE</Text>
-            <Text style={styles.promptText}>TAP ANYWHERE TO RUN</Text>
+          <View style={[styles.centerOverlay, { backgroundColor: theme.colors.overlayBg }]} pointerEvents="none">
+            <Text style={[styles.titleText, { color: theme.colors.titleText }]}>DANGER DASH</Text>
+            <Text style={[styles.subTitleText, { color: theme.colors.subtitleText }]}>MOBILE • BY VHITE</Text>
+            <Text style={[styles.promptText, { color: theme.colors.promptText }]}>TAP ANYWHERE TO RUN</Text>
           </View>
         )}
 
-        {/* GAME OVER OVERLAY (fade before App.js transitions) */}
         {gameState === GAME_CONFIG.STATE.GAMEOVER && deathFadeAlpha >= 0.7 && (
-          <View style={styles.centerOverlay} pointerEvents="none">
-            <Text style={styles.gameOverText}>GAME OVER</Text>
-            <Text style={styles.scoreSummaryText}>FINAL SCORE: {score}</Text>
-            <Text style={styles.promptText}>Loading results...</Text>
+          <View style={[styles.centerOverlay, { backgroundColor: theme.colors.overlayBg }]} pointerEvents="none">
+            <Text style={[styles.gameOverText, { color: theme.colors.gameOverText }]}>GAME OVER</Text>
+            <Text style={[styles.scoreSummaryText, { color: theme.colors.hudText }]}>FINAL SCORE: {score}</Text>
+            <Text style={[styles.promptText, { color: theme.colors.promptText }]}>Loading results...</Text>
           </View>
         )}
 
@@ -110,90 +136,30 @@ export default function GameScreen({ onGameOver }) {
 }
 
 const styles = StyleSheet.create({
-  touchContainer: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  hudTop: {
+  touchContainer: { flex: 1, width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  hudTop: { position: 'absolute', top: 20, left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between' },
+  alignRight: { alignItems: 'flex-end' },
+  hudText: { fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace' },
+  comboText: { fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace', marginTop: 4 },
+  powerText: { fontSize: 14, fontWeight: 'bold', fontFamily: 'monospace', marginTop: 4 },
+  powerName: { fontSize: 11, fontFamily: 'monospace', marginTop: 2, fontStyle: 'italic' },
+  pauseBtn: {
     position: 'absolute',
     top: 20,
-    left: 20,
     right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  alignRight: { alignItems: 'flex-end' },
-  hudText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-  },
-  comboText: {
-    color: '#ff007f',
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginTop: 4,
-  },
-  powerText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginTop: 4,
-  },
-  centerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: 50,
+    height: 50,
+    borderWidth: 2,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(5, 2, 10, 0.55)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  titleText: {
-    color: '#00f0ff',
-    fontSize: 44,
-    fontWeight: '900',
-    fontFamily: 'monospace',
-    letterSpacing: 4,
-    textShadowColor: '#00f0ff',
-    textShadowRadius: 12,
-  },
-  subTitleText: {
-    color: '#a855f7',
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    letterSpacing: 3,
-    marginTop: 8,
-  },
-  promptText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginTop: 24,
-    letterSpacing: 2,
-  },
-  gameOverText: {
-    color: '#ff0055',
-    fontSize: 44,
-    fontWeight: '900',
-    fontFamily: 'monospace',
-    letterSpacing: 4,
-    textShadowColor: '#ff0055',
-    textShadowRadius: 12,
-  },
-  scoreSummaryText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginTop: 16,
-  },
+  pauseText: { fontSize: 20, fontWeight: 'bold' },
+  centerOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
+  titleText: { fontSize: 44, fontWeight: '900', fontFamily: 'monospace', letterSpacing: 4 },
+  subTitleText: { fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace', letterSpacing: 3, marginTop: 8 },
+  promptText: { fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace', marginTop: 24, letterSpacing: 2 },
+  gameOverText: { fontSize: 44, fontWeight: '900', fontFamily: 'monospace', letterSpacing: 4 },
+  scoreSummaryText: { fontSize: 20, fontWeight: 'bold', fontFamily: 'monospace', marginTop: 16 },
 });

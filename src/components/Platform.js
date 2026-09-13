@@ -1,43 +1,63 @@
 import React from 'react';
-import { Group, Rect } from '@shopify/react-native-skia';
-import { PALETTE } from '../constants/palette';
+import { Group, Rect, useImage, ImageShader } from '@shopify/react-native-skia';
+import { useTheme } from '../context/ThemeContext';
+import { GAME_CONFIG } from '../constants/gameConfig';
+
+const TILE_SIZE = 64;
 
 export default function Platform({ platforms }) {
+  const { theme } = useTheme();
+  const platformTile = useImage(theme.assets.platformTileset);
+
   return (
     <Group>
       {platforms.map((plat) => (
         <Group key={plat.id}>
+          {/* Base dark body */}
           <Rect
             x={plat.x}
             y={plat.y}
             width={plat.width}
             height={plat.height}
-            color={PALETTE.PLATFORM_BASE}
+            color={theme.colors.platformBase}
           />
-          <Rect
-            x={plat.x + 4}
-            y={plat.y + 6}
-            width={plat.width - 8}
-            height={plat.height - 10}
-            color={PALETTE.PLATFORM_INNER_GLOW}
-            opacity={0.15}
-          />
+
+          {/* Tiled texture — repeat across the platform */}
+          {platformTile && (
+            <Rect
+              x={plat.x}
+              y={plat.y}
+              width={plat.width}
+              height={plat.height}
+            >
+              <ImageShader
+                image={platformTile}
+                fit="none"
+                rect={{ x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE }}
+                tx="repeat"
+                ty="repeat"
+              />
+            </Rect>
+          )}
+
+          {/* Bright top edge — the "surface" the player lands on */}
           <Rect
             x={plat.x}
             y={plat.y}
             width={plat.width}
-            height={5}
-            color={PALETTE.PLATFORM_TOP_EDGE}
+            height={6}
+            color={theme.colors.platformTopEdge}
           />
-          {/* LED accents — now spread across the taller body */}
-          <Rect x={plat.x + 20} y={plat.y + 60} width={35} height={4} color={PALETTE.NEON_CYAN} />
-          <Rect x={plat.x + 20} y={plat.y + 140} width={35} height={4} color={PALETTE.NEON_CYAN} />
-          {plat.width > 260 && (
-            <>
-              <Rect x={plat.x + plat.width - 60} y={plat.y + 90} width={45} height={4} color={PALETTE.NEON_BLUE} />
-              <Rect x={plat.x + plat.width - 60} y={plat.y + 170} width={45} height={4} color={PALETTE.NEON_BLUE} />
-            </>
-          )}
+
+          {/* Thin highlight line below the top edge */}
+          <Rect
+            x={plat.x}
+            y={plat.y + 6}
+            width={plat.width}
+            height={2}
+            color={theme.colors.platformTopEdge}
+            opacity={0.5}
+          />
         </Group>
       ))}
     </Group>

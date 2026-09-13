@@ -4,13 +4,17 @@ import { GAME_CONFIG } from '../constants/gameConfig';
 import { playSFX, playMusic, stopMusic, setMusicSpeedSync } from './audioManager';
 import { speakQuip } from './ttsManager';
 import { getRandomQuip } from '../constants/quips';
+import { generatePowerName } from './proceduralNames';
 
 const POWER_TYPES = GAME_CONFIG.POWER_TYPES;
 const ITEM_TYPES = GAME_CONFIG.ITEM_TYPES;
 const POWER_KEYS = Object.values(POWER_TYPES);
 
-export function useGameLoop(onGameOver) {
-  // === Render State ===
+export function useGameLoop({
+  onGameOver,
+  upgradeLevels = { extra_jump: 0, magnet_range: 0, slow_fall: 0 },
+  settings = { soundOn: true, musicOn: true, vibrationOn: true },
+}) {
   const [gameState, setGameState] = useState(GAME_CONFIG.STATE.MENU);
   const [score, setScore] = useState(0);
   const [coins, setCoins] = useState(0);
@@ -28,8 +32,9 @@ export function useGameLoop(onGameOver) {
   const [combo, setCombo] = useState(0);
   const [gravityFlipped, setGravityFlipped] = useState(false);
   const [deathFadeAlpha, setDeathFadeAlpha] = useState(0);
+  const [powerName, setPowerName] = useState('');
 
-  // === Engine Refs ===
+  // === Refs ===
   const playerYRef = useRef(GAME_CONFIG.PLAYER_START_Y);
   const playerVelocityYRef = useRef(0);
   const isGroundedRef = useRef(false);
@@ -48,7 +53,6 @@ export function useGameLoop(onGameOver) {
   const longAirStartRef = useRef(0);
   const lastSpeedQuipAtRef = useRef(0);
   const deathHandledRef = useRef(false);
-
   const lastTapTimestampRef = useRef(0);
   const lastPowerJumpTimestampRef = useRef(0);
   const distanceTraveledRef = useRef(0);
@@ -60,13 +64,49 @@ export function useGameLoop(onGameOver) {
   const rafIdRef = useRef(null);
   const deathFadeRef = useRef(0);
 
+  // Per-run stats (for challenges)
+  const runStatsRef = useRef({
+    coinsThisRun: 0,
+    maxScore: 0,
+    maxCombo: 0,
+    surviveFrames: 0,
+    powerupsUsed: 0,
+    orbsCollected: 0,
+    shieldsPickedUp: 0,
+    gravityUses: 0,
+    doublerUses: 0,
+    maxSpeed: 0,
+    jumpsThisRun: 0,
+    deaths: 0,
+    newHighScore: 0,
+  });
+
+  // Effective game values (adjusted by upgrades)
+  const maxJumpsRef = useRef(1);
+  const gravityRef = useRef(GAME_CONFIG.GRAVITY);
+  const magnetRadiusRef = useRef(GAME_CONFIG.MAGNET_RADIUS);
+
+  // Recompute effective values whenever upgrade levels change
+  useEffect(() => {
+    maxJumpsRef.current = 1 + (upgradeLevels.extra_jump || 0);
+    gravityRef.current = GAME_CONFIG.GRAVITY * (1 - 0.05 * (upgradeLevels.slow_fall || 0));
+    magnetRadiusRef.current = GAME_CONFIG.MAGNET_RADIUS + 30 * (upgradeLevels.magnet_range || 0);
+  }, [upgradeLevels]);
+
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
   const pickRandomPower = () => POWER_KEYS[Math.floor(Math.random() * POWER_KEYS.length)];
 
-  // === Item spawner ===
+  const haptic = (style) => {
+    if (!settings.vibrationOn) return;
+    try {
+      Haptics.impactAsync(style);
+    } catch (e) {}
+  };
+
+  // === Item Spawner ===
   const spawnItemsForPlatform = (plat) => {
     const spawned = [];
     const hazardRoll = Math.random();
@@ -124,7 +164,7 @@ export function useGameLoop(onGameOver) {
     return spawned;
   };
 
-  // === Start / Restart ===
+  // === Start ===
   const startGame = useCallback(() => {
     playerYRef.current = GAME_CONFIG.PLAYER_START_Y;
     playerVelocityYRef.current = 0;
@@ -149,6 +189,22 @@ export function useGameLoop(onGameOver) {
     deathFadeRef.current = 0;
     deathHandledRef.current = false;
 
+    runStatsRef.current = {
+      coinsThisRun: 0,
+      maxScore: 0,
+      maxCombo: 0,
+      surviveFrames: 0,
+      powerupsUsed: 0,
+      orbsCollected: 0,
+      shieldsPickedUp: 0,
+      gravityUses: 0,
+      doublerUses: 0,
+      maxSpeed: 0,
+      jumpsThisRun: 0,
+      deaths: 0,
+      newHighScore: 0,
+    };
+
     const initialPlatforms = [
       { id: Date.now(), x: 0, y: GAME_CONFIG.GROUND_Y, width: 520, height: GAME_CONFIG.PLATFORM_HEIGHT },
       { id: Date.now() + 1, x: 660, y: GAME_CONFIG.GROUND_Y, width: 380, height: GAME_CONFIG.PLATFORM_HEIGHT },
@@ -172,36 +228,38 @@ export function useGameLoop(onGameOver) {
     setCombo(0);
     setGravityFlipped(false);
     setDeathFadeAlpha(0);
+    setPowerName('');
     setGameState(GAME_CONFIG.STATE.PLAYING);
 
     playMusic('gameplay_track_1');
     speakQuip(getRandomQuip('START'), { force: true });
   }, []);
 
-  // === Game Over — delegates to App.js ===
+  // === Game Over ===
   const triggerGameOver = useCallback(() => {
     if (deathHandledRef.current) return;
     deathHandledRef.current = true;
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    haptic(Haptics.ImpactFeedbackStyle.Heavy);
     playSFX('water_splash');
     stopMusic();
     setTimeout(() => playSFX('game_over'), 250);
 
     const finalScore = Math.floor(distanceTraveledRef.current);
-    const finalCoins = coinsRef.current;
+    const finalCoins = runStatsRef.current.coinsThisRun;
 
     speakQuip(getRandomQuip('DEATH'), { force: true });
 
     setGameState(GAME_CONFIG.STATE.GAMEOVER);
 
-    // Hand off to App.js after a short delay so death fade can play
+    const runStats = { ...runStatsRef.current, maxScore: finalScore };
+
     setTimeout(() => {
-      if (onGameOver) onGameOver(finalScore, finalCoins);
+      if (onGameOver) onGameOver(finalScore, finalCoins, runStats);
     }, 900);
   }, [onGameOver]);
 
-  // === Handle Tap ===
+  // === Tap handler ===
   const handleScreenTap = useCallback(() => {
     const currentState = gameStateRef.current;
 
@@ -224,13 +282,17 @@ export function useGameLoop(onGameOver) {
       const sign = gravityFlippedRef.current ? -1 : 1;
       playerVelocityYRef.current = GAME_CONFIG.POWER_JUMP_FORCE * sign;
       isGroundedRef.current = false;
-      jumpCountRef.current = GAME_CONFIG.MAX_MIDAIR_JUMPS + 1;
+      jumpCountRef.current = maxJumpsRef.current + 1;
       lastPowerJumpTimestampRef.current = now;
       powerJumpFlashRef.current = 1.0;
       setPowerJumpFlash(1.0);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      haptic(Haptics.ImpactFeedbackStyle.Heavy);
       playSFX('power_jump');
-    } else if (isGroundedRef.current || jumpCountRef.current < GAME_CONFIG.MAX_MIDAIR_JUMPS) {
+      runStatsRef.current.jumpsThisRun += 1;
+    } else if (
+      isGroundedRef.current ||
+      jumpCountRef.current < maxJumpsRef.current
+    ) {
       const sign = gravityFlippedRef.current ? -1 : 1;
       const jumpForce =
         activePowerRef.current === POWER_TYPES.FLOAT
@@ -239,12 +301,13 @@ export function useGameLoop(onGameOver) {
       playerVelocityYRef.current = jumpForce * sign;
       isGroundedRef.current = false;
       jumpCountRef.current += 1;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      haptic(Haptics.ImpactFeedbackStyle.Light);
       playSFX('jump');
+      runStatsRef.current.jumpsThisRun += 1;
     }
 
     lastTapTimestampRef.current = now;
-  }, [startGame]);
+  }, [startGame, settings.vibrationOn]);
 
   // === Activate power ===
   const activatePower = (powerType) => {
@@ -256,28 +319,39 @@ export function useGameLoop(onGameOver) {
     if (powerType === POWER_TYPES.SHIELD) {
       hasShieldRef.current = true;
       setHasShield(true);
+      runStatsRef.current.shieldsPickedUp += 1;
     }
     if (powerType === POWER_TYPES.GRAVITY_FLIP) {
       gravityFlippedRef.current = true;
       setGravityFlipped(true);
+      runStatsRef.current.gravityUses += 1;
+    }
+    if (powerType === POWER_TYPES.SCORE_DOUBLER) {
+      runStatsRef.current.doublerUses += 1;
     }
 
+    runStatsRef.current.powerupsUsed += 1;
+    runStatsRef.current.orbsCollected += 1;
+
+    const name = generatePowerName();
+    setPowerName(name);
+
     playSFX('powerup');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    haptic(Haptics.ImpactFeedbackStyle.Heavy);
     speakQuip(getRandomQuip('POWER_UP'));
   };
 
-  // === Main Game Loop ===
+  // === Main loop ===
   useEffect(() => {
     if (gameState !== GAME_CONFIG.STATE.PLAYING) return;
-
     let cancelled = false;
 
     const updateFrame = () => {
       if (cancelled) return;
-
       frameTickRef.current += 1;
       const now = Date.now();
+
+      runStatsRef.current.surviveFrames += 1;
 
       // Speed ramp
       if (currentSpeedRef.current < GAME_CONFIG.MAX_SPEED) {
@@ -292,6 +366,9 @@ export function useGameLoop(onGameOver) {
           (activePowerRef.current === POWER_TYPES.SPEED ? GAME_CONFIG.SPEED_POWER_BOOST : 0) +
           frameTickRef.current * GAME_CONFIG.SPEED_ACCELERATION
       );
+      if (currentSpeedRef.current > runStatsRef.current.maxSpeed) {
+        runStatsRef.current.maxSpeed = currentSpeedRef.current;
+      }
 
       setMusicSpeedSync(currentSpeedRef.current);
 
@@ -321,9 +398,9 @@ export function useGameLoop(onGameOver) {
         }
       }
 
-      // Gravity
+      // Gravity (with slow_fall upgrade applied)
       const gravitySign = gravityFlippedRef.current ? -1 : 1;
-      let appliedGravity = GAME_CONFIG.GRAVITY * gravitySign;
+      let appliedGravity = gravityRef.current * gravitySign;
 
       if (activePowerRef.current === POWER_TYPES.FLOAT) {
         appliedGravity *= GAME_CONFIG.FLOAT_GRAVITY_MULT;
@@ -332,12 +409,13 @@ export function useGameLoop(onGameOver) {
         appliedGravity *= GAME_CONFIG.FALL_GRAVITY_MULTIPLIER;
       }
 
-            playerVelocityYRef.current = Math.max(
+      playerVelocityYRef.current = Math.max(
         -GAME_CONFIG.MAX_FALL_SPEED,
         Math.min(GAME_CONFIG.MAX_FALL_SPEED, playerVelocityYRef.current + appliedGravity)
       );
       playerYRef.current += playerVelocityYRef.current;
-      // Long-air quip
+
+      // Long air quip
       if (!isGroundedRef.current) {
         if (longAirStartRef.current === 0) longAirStartRef.current = now;
         else if (now - longAirStartRef.current > 1500) {
@@ -348,7 +426,7 @@ export function useGameLoop(onGameOver) {
         longAirStartRef.current = 0;
       }
 
-      // High-speed quip
+      // High speed quip
       if (currentSpeedRef.current > GAME_CONFIG.MAX_SPEED * 0.85) {
         if (now - lastSpeedQuipAtRef.current > 12000) {
           lastSpeedQuipAtRef.current = now;
@@ -356,7 +434,7 @@ export function useGameLoop(onGameOver) {
         }
       }
 
-      // Platforms
+      // Platforms scroll
       let updatedPlatforms = platformsRef.current.map((p) => ({
         ...p,
         x: p.x - currentSpeedRef.current,
@@ -391,7 +469,7 @@ export function useGameLoop(onGameOver) {
         .map((it) => ({ ...it, x: it.x - currentSpeedRef.current }))
         .filter((it) => it.x + it.width > -50);
 
-      // Collisions
+      // Collision
       const pX = GAME_CONFIG.PLAYER_START_X;
       const pW = GAME_CONFIG.PLAYER_WIDTH;
       const pH = GAME_CONFIG.PLAYER_HEIGHT;
@@ -404,12 +482,11 @@ export function useGameLoop(onGameOver) {
         const plat = updatedPlatforms[i];
         const horizontalOverlap = pX + pW > plat.x && pX < plat.x + plat.width;
 
-                if (!gravityFlippedRef.current) {
-          // Wider tolerance window = no more 0.85px bounce
+        if (!gravityFlippedRef.current) {
           const verticalCross = currentBottom >= plat.y - 4 && currentBottom <= plat.y + 18;
           const falling = playerVelocityYRef.current >= 0;
           if (horizontalOverlap && verticalCross && falling) {
-            playerYRef.current = plat.y - pH;   // HARD SNAP
+            playerYRef.current = plat.y - pH;
             playerVelocityYRef.current = 0;
             isGroundedRef.current = true;
             jumpCountRef.current = 0;
@@ -448,13 +525,17 @@ export function useGameLoop(onGameOver) {
           if (item.type === ITEM_TYPES.COIN) {
             const mult = activePowerRef.current === POWER_TYPES.SCORE_DOUBLER ? 2 : 1;
             coinsRef.current += 1 * mult;
+            runStatsRef.current.coinsThisRun += 1 * mult;
             setCoins(coinsRef.current);
             playSFX('coin_pickup');
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            haptic(Haptics.ImpactFeedbackStyle.Light);
 
             comboRef.current += 1;
             comboTimerRef.current = GAME_CONFIG.COMBO_TIMEOUT_FRAMES;
             setCombo(comboRef.current);
+            if (comboRef.current > runStatsRef.current.maxCombo) {
+              runStatsRef.current.maxCombo = comboRef.current;
+            }
 
             if (comboRef.current === 5) speakQuip(getRandomQuip('COMBO_5'));
             else if (comboRef.current === 10) speakQuip(getRandomQuip('COMBO_10'));
@@ -468,6 +549,9 @@ export function useGameLoop(onGameOver) {
             comboRef.current += 1;
             comboTimerRef.current = GAME_CONFIG.COMBO_TIMEOUT_FRAMES;
             setCombo(comboRef.current);
+            if (comboRef.current > runStatsRef.current.maxCombo) {
+              runStatsRef.current.maxCombo = comboRef.current;
+            }
             continue;
           }
 
@@ -479,7 +563,7 @@ export function useGameLoop(onGameOver) {
               currentSpeedRef.current * GAME_CONFIG.BOOST_SPEED_MULTIPLIER
             );
             playSFX('boost_pad');
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            haptic(Haptics.ImpactFeedbackStyle.Medium);
             continue;
           }
 
@@ -503,7 +587,9 @@ export function useGameLoop(onGameOver) {
                   return;
                 }
               }
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              if (settings.vibrationOn) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              }
             }
           }
         }
@@ -529,7 +615,7 @@ export function useGameLoop(onGameOver) {
         setScore(newScore);
       }
 
-           // Sync (rounded to prevent sub-pixel jitter)
+      // Sync
       setPlayerX(Math.round(pX));
       setPlayerY(Math.round(playerYRef.current));
       setIsGrounded(isGroundedRef.current);
@@ -538,7 +624,6 @@ export function useGameLoop(onGameOver) {
       setItems(remainingItems);
       setPowerJumpFlash(powerJumpFlashRef.current);
 
-      // Fall death
       if (playerYRef.current + pH >= GAME_CONFIG.FALL_DEATH_Y || playerYRef.current < -100) {
         triggerGameOver();
         return;
@@ -548,14 +633,13 @@ export function useGameLoop(onGameOver) {
     };
 
     rafIdRef.current = requestAnimationFrame(updateFrame);
-
     return () => {
       cancelled = true;
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [gameState, triggerGameOver]);
+  }, [gameState, triggerGameOver, settings.vibrationOn]);
 
-  // Death fade animation
+  // Death fade
   useEffect(() => {
     if (gameState !== GAME_CONFIG.STATE.GAMEOVER) return;
     deathFadeRef.current = 0;
@@ -586,6 +670,7 @@ export function useGameLoop(onGameOver) {
     combo,
     gravityFlipped,
     deathFadeAlpha,
+    powerName,
     handleScreenTap,
     startGame,
   };

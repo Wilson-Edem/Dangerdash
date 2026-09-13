@@ -5,11 +5,8 @@ export const GAME_CONFIG = {
   STATE: {
     MENU: 'MENU',
     PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
     GAMEOVER: 'GAMEOVER',
-    SHOP: 'SHOP',
-    CHALLENGES: 'CHALLENGES',
-    OPTIONS: 'OPTIONS',
-    GAMEOVER_SCREEN: 'GAMEOVER_SCREEN',
   },
 
   // === Physics ===
@@ -21,31 +18,33 @@ export const GAME_CONFIG = {
   SPEED_ACCELERATION: 0.0006,
   COIN_SPEED_BONUS: 0.05,
 
-  // === Player ===
+  // === Player (FIXED: portrait orientation) ===
   PLAYER_START_X: 280,
   PLAYER_START_Y: 120,
-  PLAYER_WIDTH: 70,
-  PLAYER_HEIGHT: 47,
+  PLAYER_WIDTH: 50,
+  PLAYER_HEIGHT: 66,
   MAX_HEALTH: 3,
-  INVINCIBILITY_FRAMES: 200,
+  INVINCIBILITY_FRAMES: 60,
 
   // === Jump ===
   JUMP_FORCE: -15.5,
   POWER_JUMP_FORCE: -25.0,
-  MAX_MIDAIR_JUMPS: 2,
+  MAX_MIDAIR_JUMPS: 1,
   DOUBLE_TAP_WINDOW: 300,
   POWER_JUMP_COOLDOWN: 400,
 
   // === Platforms ===
   GROUND_Y: 200,
-  PLATFORM_HEIGHT: 220,           // ← doubled (was 110)
+  PLATFORM_HEIGHT: 180,
   MIN_PLATFORM_WIDTH: 180,
   MAX_PLATFORM_WIDTH: 420,
-  STANDARD_GAP: 110,              // ← restored
-  MAX_GAP: 220,                   // ← restored
+  STANDARD_GAP: 90,
+  MAX_GAP: 180,
 
-  SPRITE_OFFSET_Y: 12,
-  // === Items (bigger sizes) ===
+  // Sprite vertical alignment
+  SPRITE_OFFSET_Y: 8,
+
+  // === Items ===
   ITEM_TYPES: {
     COIN: 'COIN',
     SPIKE: 'SPIKE',
@@ -53,12 +52,12 @@ export const GAME_CONFIG = {
     POWER_ORB: 'POWER_ORB',
   },
 
-  COIN_SIZE: 36,
-  SPIKE_WIDTH: 42,
-  SPIKE_HEIGHT: 34,
-  BOOST_PAD_WIDTH: 56,
-  BOOST_PAD_HEIGHT: 20,
-  POWER_ORB_SIZE: 40,
+  COIN_SIZE: 34,
+  SPIKE_WIDTH: 40,
+  SPIKE_HEIGHT: 32,
+  BOOST_PAD_WIDTH: 52,
+  BOOST_PAD_HEIGHT: 18,
+  POWER_ORB_SIZE: 38,
   BOOST_SPEED_MULTIPLIER: 1.4,
 
   POWER_TYPES: {
@@ -87,9 +86,9 @@ export const GAME_CONFIG = {
   COMBO_TIMEOUT_FRAMES: 300,
   COMBO_SCORE_BONUS: 0.2,
 
-  // === Water (raised so it's more prominent) ===
-  WATER_LEVEL_Y: 470,
-  FALL_DEATH_Y: 440,
+  // === Water (FIXED: visible band, death below water) ===
+  WATER_LEVEL_Y: 340,
+  FALL_DEATH_Y: 470,
 
   MUSIC_BASE_VOLUME: 0.5,
   MUSIC_FADE_IN_MS: 800,

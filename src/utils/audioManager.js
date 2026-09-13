@@ -1,5 +1,4 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import { GAME_CONFIG } from '../constants/gameConfig';
 
 const SOUND_ASSETS = {
   menu_theme: require('../../assets/audio/music/menu_theme.mp3'),
@@ -25,29 +24,48 @@ let musicPlayer = null;
 let currentMusicKey = null;
 let isPreloaded = false;
 
+// Runtime flags — set by OptionsScreen via setAudioFlags()
+let flags = { musicOn: true, soundOn: true };
+
+export function setAudioFlags(next) {
+  flags = { ...flags, ...next };
+  if (!flags.musicOn && musicPlayer) {
+    try { musicPlayer.pause(); } catch (e) {}
+  } else if (flags.musicOn && musicPlayer && currentMusicKey) {
+    try { musicPlayer.play(); } catch (e) {}
+  }
+}
+
 export async function initAudioSession() {
   try {
     await setAudioModeAsync({
       playsInSilentMode: true,
-      shouldPlayInBackground: false,
+      shouldPlayInBackground: true,   // FIX: was false
+      interruptionMode: 'doNotMix',
     });
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Audio session init failed:', e);
+  }
 }
 
 export async function preloadAllAudio() {
   if (isPreloaded) return;
   isPreloaded = true;
+
   for (const key of Object.keys(SOUND_ASSETS)) {
     if (MUSIC_TRACKS.includes(key)) continue;
     try {
       const player = createAudioPlayer(SOUND_ASSETS[key]);
       player.volume = 0.8;
       sfxPlayers[key] = player;
-    } catch (e) {}
+    } catch (e) {
+      console.warn(`SFX preload failed (${key}):`, e);
+    }
   }
 }
 
 export function playSFX(key) {
+  if (!flags.soundOn) return;
   const player = sfxPlayers[key];
   if (!player) return;
   try {
@@ -56,19 +74,18 @@ export function playSFX(key) {
   } catch (e) {}
 }
 
-// Crossfade into a new music track
-export async function playMusic(key, fadeMs = GAME_CONFIG.MUSIC_FADE_IN_MS) {
+export async function playMusic(key, fadeMs = 800) {
+  if (!flags.musicOn) return;
   if (currentMusicKey === key && musicPlayer) return;
 
-  // Fade out existing music first
   if (musicPlayer) {
-    const oldPlayer = musicPlayer;
+    const old = musicPlayer;
     musicPlayer = null;
     currentMusicKey = null;
-    fadeVolume(oldPlayer, oldPlayer.volume || 0, 0, fadeMs / 2, () => {
+    fadeVolume(old, old.volume || 0, 0, fadeMs / 2, () => {
       try {
-        oldPlayer.pause();
-        oldPlayer.remove();
+        old.pause();
+        old.remove();
       } catch (e) {}
     });
   }
@@ -81,18 +98,31 @@ export async function playMusic(key, fadeMs = GAME_CONFIG.MUSIC_FADE_IN_MS) {
     player.loop = true;
     player.volume = 0;
     player.play();
+
+    // Lock-screen metadata — required on Android for sustained background play
+    if (typeof player.setActiveForLockScreen === 'function') {
+      try {
+        player.setActiveForLockScreen(true, {
+          title: 'Danger Dash',
+          artist: 'Vhite',
+        });
+      } catch (e) {}
+    }
+
     musicPlayer = player;
     currentMusicKey = key;
-    fadeVolume(player, 0, GAME_CONFIG.MUSIC_BASE_VOLUME, fadeMs);
-  } catch (e) {}
+    fadeVolume(player, 0, 0.5, fadeMs);
+  } catch (e) {
+    console.warn(`Music playback failed (${key}):`, e);
+  }
 }
 
-export function stopMusic(fadeMs = GAME_CONFIG.MUSIC_FADE_OUT_MS) {
+export function stopMusic(fadeMs = 600) {
   if (!musicPlayer) return;
   const p = musicPlayer;
   musicPlayer = null;
   currentMusicKey = null;
-  fadeVolume(p, p.volume || GAME_CONFIG.MUSIC_BASE_VOLUME, 0, fadeMs, () => {
+  fadeVolume(p, p.volume || 0.5, 0, fadeMs, () => {
     try {
       p.pause();
       p.remove();
@@ -100,12 +130,11 @@ export function stopMusic(fadeMs = GAME_CONFIG.MUSIC_FADE_OUT_MS) {
   });
 }
 
-// Speed-synced music: rate 1.0 → 1.15 based on game speed
 export function setMusicSpeedSync(currentSpeed) {
   if (!musicPlayer) return;
   try {
-    const ratio = Math.min(currentSpeed / GAME_CONFIG.MAX_SPEED, 1);
-    const rate = 1 + ratio * (GAME_CONFIG.MUSIC_MAX_RATE - 1);
+    const ratio = Math.min(currentSpeed / 14.0, 1);
+    const rate = 1 + ratio * 0.15;   // 1.0 → 1.15
     if (typeof musicPlayer.setPlaybackRate === 'function') {
       musicPlayer.setPlaybackRate(rate);
     }
