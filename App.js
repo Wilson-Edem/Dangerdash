@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, StatusBar } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep native splash visible until we're ready
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import LoadingScreen from './src/screens/LoadingScreen';
@@ -14,6 +18,7 @@ import OptionsScreen from './src/screens/OptionsScreen';
 
 import { useResponsiveCanvas } from './src/utils/useResponsiveCanvas';
 import { initAudioSession, preloadAllAudio, playMusic, setAudioFlags } from './src/utils/audioManager';
+import { enableImmersiveMode, reassertImmersiveMode } from './src/utils/immersiveMode';
 import { loadSave, recordRun, writeSave } from './src/utils/saveManager';
 import { SKINS } from './src/constants/skins';
 import { CHALLENGES } from './src/constants/challenges';
@@ -43,29 +48,44 @@ function GameRoot() {
 
   useEffect(() => {
     let mounted = true;
-    async function boot() {
-      await initAudioSession();
-      await preloadAllAudio();
-      const save = await loadSave();
-      if (!mounted) return;
-      setSaveData(save);
-      upgradeLevelsRef.current = save.upgrades || upgradeLevelsRef.current;
-      settingsRef.current = save.settings || settingsRef.current;
-      setAudioFlags({
-        musicOn: save.settings.musicOn,
-        soundOn: save.settings.soundOn,
-      });
-      // Find equipped skin colors
-      const skin = SKINS.find((s) => s.id === (save.equippedSkin || 'default'));
-      if (skin) skinColorsRef.current = skin.colors;
 
-      await playMusic('menu_theme');
+    async function boot() {
+      try {
+        await enableImmersiveMode();
+        await initAudioSession();
+        await preloadAllAudio();
+        const save = await loadSave();
+        if (!mounted) return;
+
+        setSaveData(save);
+        upgradeLevelsRef.current = save.upgrades || upgradeLevelsRef.current;
+        settingsRef.current = save.settings || settingsRef.current;
+        setAudioFlags({
+          musicOn: save.settings.musicOn,
+          soundOn: save.settings.soundOn,
+        });
+
+        const skin = SKINS.find((s) => s.id === (save.equippedSkin || 'default'));
+        if (skin) skinColorsRef.current = skin.colors;
+
+        await playMusic('menu_theme');
+      } catch (e) {
+        console.warn('Boot error (non-fatal):', e);
+      } finally {
+        SplashScreen.hideAsync().catch(() => {});
+      }
     }
+
     boot();
 
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
 
-    return () => { mounted = false; };
+    const immersiveInterval = setInterval(reassertImmersiveMode, 3000);
+
+    return () => {
+      mounted = false;
+      clearInterval(immersiveInterval);
+    };
   }, []);
 
   const refreshSave = async () => {
@@ -82,30 +102,28 @@ function GameRoot() {
     const isNewHigh = await recordRun(score, coins);
     const save = await loadSave();
 
-    // Update challenge progress
     if (save.challengeProgress) {
       const progress = { ...save.challengeProgress };
       const increment = (key, value) => {
         progress[key] = (progress[key] || 0) + value;
       };
 
-      increment('coins_in_run', runStats.coinsThisRun);
-      increment('score_run', runStats.maxScore);
+      increment('coins_in_run', runStats.coinsThisRun || 0);
+      increment('score_run', runStats.maxScore || 0);
       increment('runs_played', 1);
-      increment('powerups_used', runStats.powerupsUsed);
-      increment('combo_max', runStats.maxCombo);
-      increment('survive_frames', runStats.surviveFrames);
-      increment('orbs_in_run', runStats.orbsCollected);
-      increment('shield_pickups', runStats.shieldsPickedUp);
+      increment('powerups_used', runStats.powerupsUsed || 0);
+      increment('combo_max', runStats.maxCombo || 0);
+      increment('survive_frames', runStats.surviveFrames || 0);
+      increment('orbs_in_run', runStats.orbsCollected || 0);
+      increment('shield_pickups', runStats.shieldsPickedUp || 0);
       increment('deaths', 1);
-      increment('total_coins', runStats.coinsThisRun);
-      increment('jumps_total', runStats.jumpsThisRun);
-      increment('gravity_uses', runStats.gravityUses);
-      increment('doubler_uses', runStats.doublerUses);
-      increment('speed_max', Math.floor(runStats.maxSpeed * 10) / 10);
+      increment('total_coins', runStats.coinsThisRun || 0);
+      increment('jumps_total', runStats.jumpsThisRun || 0);
+      increment('gravity_uses', runStats.gravityUses || 0);
+      increment('doubler_uses', runStats.doublerUses || 0);
+      increment('speed_max', Math.floor((runStats.maxSpeed || 0) * 10) / 10);
       if (isNewHigh) increment('new_high_score', 1);
 
-      // Count how many challenges are completed
       const completed = CHALLENGES.filter((ch) => (progress[ch.id] || 0) >= ch.target).length;
       progress['challenges_done'] = completed;
 
@@ -118,7 +136,7 @@ function GameRoot() {
   };
 
   const startPlaying = () => {
-    setGameKey((k) => k + 1); // remount GameScreen for clean state
+    setGameKey((k) => k + 1);
     setAppState(APP_STATE.PLAYING);
   };
 
@@ -166,11 +184,11 @@ function GameRoot() {
           />
         );
       case APP_STATE.SHOP:
-        return <ShopScreen onBack={() => { refreshSave(); setAppState(APP_STATE.MENU); }} />;
+        return <ShopScreen onBack={async () => { await refreshSave(); setAppState(APP_STATE.MENU); }} />;
       case APP_STATE.CHALLENGES:
         return <ChallengesScreen onBack={() => setAppState(APP_STATE.MENU)} />;
       case APP_STATE.OPTIONS:
-        return <OptionsScreen onBack={() => { refreshSave(); setAppState(APP_STATE.MENU); }} />;
+        return <OptionsScreen onBack={async () => { await refreshSave(); setAppState(APP_STATE.MENU); }} />;
       default:
         return null;
     }

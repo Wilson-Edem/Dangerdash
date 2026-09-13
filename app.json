@@ -13,6 +13,7 @@
     "android": {
       "package": "com.vhite.dangerdashmobile",
       "userInterfaceStyle": "dark",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#030108"
@@ -20,11 +21,17 @@
       "permissions": [
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "plugins": [
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
+        }
+      ],
       "expo-asset",
       [
         "expo-splash-screen",
@@ -39,7 +46,7 @@
         "expo-navigation-bar",
         {
           "backgroundColor": "#000000",
-          "barStyle": "light-content",
+          "style": "light",
           "visibility": "hidden"
         }
       ],

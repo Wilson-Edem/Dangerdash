@@ -34,20 +34,11 @@ export default function LoadingScreen({ onFinishLoading }) {
       useNativeDriver: true,
     }).start();
 
+       // Title glow pulse loop (opacity only — textShadowRadius can't be animated natively)
     Animated.loop(
       Animated.sequence([
-        Animated.timing(titleGlow, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(titleGlow, {
-          toValue: 0.3,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
+        Animated.timing(titleGlow, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(titleGlow, { toValue: 0.4, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     ).start();
 
@@ -130,17 +121,11 @@ export default function LoadingScreen({ onFinishLoading }) {
         {stage === 0 && (
           <Animated.View style={[styles.titleStage, { opacity: titleFade }]}>
             <Animated.Text
-              style={[
-                styles.mainTitle,
-                {
-                  opacity: titleGlow,
-                  textShadowRadius: titleGlow.interpolate({
-                    inputRange: [0.3, 1],
-                    outputRange: [8, 25],
-                  }),
-                },
-              ]}
-            >
+  style={[
+    styles.mainTitle,
+    { opacity: titleGlow },
+  ]}
+>
               DANGERDASH MOBILE
             </Animated.Text>
             <Text style={styles.subTitle}>by Vhite</Text>
@@ -210,15 +195,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mainTitle: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 4,
-    textTransform: 'uppercase',
-    textShadowColor: '#C084FC',
-    textShadowOffset: { width: 0, height: 0 },
-    fontFamily: 'sans-serif-condensed',
-  },
+  fontSize: 52,
+  fontWeight: '900',
+  color: '#FFFFFF',
+  letterSpacing: 6,
+  textTransform: 'uppercase',
+  textShadowColor: '#00F0FF',
+  textShadowOffset: { width: 0, height: 0 },
+  textShadowRadius: 18,
+  fontFamily: 'sans-serif-condensed',
+},
   subTitle: {
     fontSize: 18,
     fontWeight: '600',
