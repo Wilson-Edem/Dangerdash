@@ -35,12 +35,6 @@ export const GAME_CONFIG = {
 
   PLAYER_START_Y: 120,
 
-  /*
-   * These dimensions are also used for
-   * collision calculations.
-   *
-   * Do not distort the character to 70x47.
-   */
   PLAYER_WIDTH: 50,
 
   PLAYER_HEIGHT: 66,
@@ -75,14 +69,14 @@ export const GAME_CONFIG = {
 
   MAX_PLATFORM_WIDTH: 420,
 
-  STANDARD_GAP: 90,
-
-  MAX_GAP: 180,
-
   /*
-   * Sprite alignment relative to the
-   * physics/collision box.
+   * Smaller gaps make the early game playable
+   * while still requiring jumps.
    */
+  STANDARD_GAP: 65,
+
+  MAX_GAP: 115,
+
   SPRITE_OFFSET_Y: 8,
 
   // =========================
@@ -152,21 +146,11 @@ export const GAME_CONFIG = {
   // WATER
   // =========================
 
-  /*
-   * Water is visible inside the 450px
-   * virtual game world.
-   */
   WATER_LEVEL_Y: 340,
 
-  /*
-   * Player can fall below the virtual
-   * screen before dying.
-   */
-  FALL_DEATH_Y: 470,
+  FALL_DEATH_Y: 365,
 
-  // =========================
-  // AUDIO
-  // =========================
+  
 
   MUSIC_BASE_VOLUME: 0.5,
 

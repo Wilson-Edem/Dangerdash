@@ -16,6 +16,7 @@ import ChallengesScreen from './src/screens/ChallengesScreen';
 import OptionsScreen from './src/screens/OptionsScreen';
 
 import { useResponsiveCanvas } from './src/utils/useResponsiveCanvas';
+
 import {
   initAudioSession,
   preloadAllAudio,
@@ -52,7 +53,10 @@ function GameRoot() {
   const { theme, isReady: themeReady } = useTheme();
 
   const [appState, setAppState] = useState(APP_STATE.LOADING);
-  const [orientationReady, setOrientationReady] = useState(false);
+
+  const [orientationReady, setOrientationReady] =
+    useState(false);
+
   const [lastResult, setLastResult] = useState({
     score: 0,
     coins: 0,
@@ -89,9 +93,9 @@ function GameRoot() {
   ]);
 
   /*
-   * Lock orientation BEFORE mounting the actual game UI.
-   * This prevents the first frame from being rendered using
-   * portrait dimensions and subsequently transformed into landscape.
+   * Lock landscape before rendering the game UI.
+   * This prevents the game from initially measuring
+   * itself using portrait dimensions.
    */
   useEffect(() => {
     let mounted = true;
@@ -102,7 +106,10 @@ function GameRoot() {
           ScreenOrientation.OrientationLock.LANDSCAPE
         );
       } catch (error) {
-        console.warn('Landscape orientation lock failed:', error);
+        console.warn(
+          'Landscape orientation lock failed:',
+          error
+        );
       }
 
       if (mounted) {
@@ -118,7 +125,8 @@ function GameRoot() {
   }, []);
 
   /*
-   * Boot only after orientation is ready.
+   * Boot the game only after landscape orientation
+   * has been established.
    */
   useEffect(() => {
     if (!orientationReady) return undefined;
@@ -151,7 +159,8 @@ function GameRoot() {
 
         const skin = SKINS.find(
           (item) =>
-            item.id === (save.equippedSkin || 'default')
+            item.id ===
+            (save.equippedSkin || 'default')
         );
 
         if (skin?.colors) {
@@ -193,7 +202,8 @@ function GameRoot() {
 
     const skin = SKINS.find(
       (item) =>
-        item.id === (save.equippedSkin || 'default')
+        item.id ===
+        (save.equippedSkin || 'default')
     );
 
     if (skin?.colors) {
@@ -203,118 +213,153 @@ function GameRoot() {
     return save;
   };
 
+  /*
+   * Convert the statistics produced by a single run
+   * into the correct daily challenge progress.
+   */
   const handleGameOver = async (
     score,
     coins,
-    runStats
+    runStats = {}
   ) => {
-    const isNewHigh = await recordRun(score, coins);
+    const isNewHigh = await recordRun(
+      score,
+      coins
+    );
+
     const save = await loadSave();
 
-    if (save.challengeProgress) {
-      const progress = {
-        ...save.challengeProgress,
-      };
+    const progress = {
+      ...(save.challengeProgress || {}),
+    };
 
-      const increment = (key, value) => {
-        progress[key] =
-          (progress[key] || 0) + value;
-      };
+    /*
+     * These challenges represent the BEST result
+     * achieved during a single run.
+     */
+    const bestTypes = new Set([
+      'coins_in_run',
+      'score_run',
+      'combo_max',
+      'survive_frames',
+      'orbs_in_run',
+      'speed_max',
+      'new_high_score',
+    ]);
 
-      increment(
-        'coins_in_run',
-        runStats.coinsThisRun || 0
-      );
+    /*
+     * These challenges accumulate over multiple
+     * runs during the current challenge day.
+     */
+    const cumulativeValues = {
+      runs_played: 1,
 
-      increment(
-        'score_run',
-        runStats.maxScore || 0
-      );
-
-      increment(
-        'runs_played',
-        1
-      );
-
-      increment(
-        'powerups_used',
+      powerups_used: Number(
         runStats.powerupsUsed || 0
-      );
+      ),
 
-      increment(
-        'combo_max',
-        runStats.maxCombo || 0
-      );
-
-      increment(
-        'survive_frames',
-        runStats.surviveFrames || 0
-      );
-
-      increment(
-        'orbs_in_run',
-        runStats.orbsCollected || 0
-      );
-
-      increment(
-        'shield_pickups',
+      shield_pickups: Number(
         runStats.shieldsPickedUp || 0
-      );
+      ),
 
-      increment(
-        'deaths',
-        1
-      );
+      deaths: 1,
 
-      increment(
-        'total_coins',
-        runStats.coinsThisRun || 0
-      );
+      total_coins: Number(
+        runStats.coinsThisRun || coins || 0
+      ),
 
-      increment(
-        'jumps_total',
+      jumps_total: Number(
         runStats.jumpsThisRun || 0
-      );
+      ),
 
-      increment(
-        'gravity_uses',
+      gravity_uses: Number(
         runStats.gravityUses || 0
-      );
+      ),
 
-      increment(
-        'doubler_uses',
+      doubler_uses: Number(
         runStats.doublerUses || 0
-      );
+      ),
+    };
 
-      increment(
-        'speed_max',
-        Math.floor(
-          (runStats.maxSpeed || 0) * 10
-        ) / 10
-      );
+    const bestValues = {
+      coins_in_run: Number(
+        runStats.coinsThisRun || coins || 0
+      ),
 
-      if (isNewHigh) {
-        increment(
-          'new_high_score',
-          1
+      score_run: Number(score || 0),
+
+      combo_max: Number(
+        runStats.maxCombo || 0
+      ),
+
+      survive_frames: Number(
+        runStats.surviveFrames || 0
+      ),
+
+      orbs_in_run: Number(
+        runStats.orbsCollected || 0
+      ),
+
+      speed_max: Number(
+        runStats.maxSpeed || 0
+      ),
+
+      new_high_score: isNewHigh ? 1 : 0,
+    };
+
+    CHALLENGES.forEach((challenge) => {
+      const id = challenge.id;
+
+      if (bestTypes.has(challenge.type)) {
+        progress[id] = Math.max(
+          Number(progress[id] || 0),
+          Number(
+            bestValues[challenge.type] || 0
+          )
         );
+
+        return;
       }
 
-      const completed =
-        CHALLENGES.filter(
-          (challenge) =>
-            (progress[challenge.id] || 0) >=
-            challenge.target
-        ).length;
+      const amount = Number(
+        cumulativeValues[challenge.type] || 0
+      );
 
-      progress.challenges_done = completed;
+      progress[id] =
+        Number(progress[id] || 0) + amount;
+    });
 
-      await writeSave({
-        challengeProgress: progress,
-      });
+    /*
+     * Recalculate completed challenges after
+     * updating this run.
+     */
+    progress.challenges_done =
+      CHALLENGES.filter(
+        (challenge) =>
+          Number(
+            progress[challenge.id] || 0
+          ) >= Number(challenge.target)
+      ).length;
 
-      setSaveData(await loadSave());
-    }
+    await writeSave({
+      challengeProgress: progress,
+
+      totalJumps:
+        Number(save.totalJumps || 0) +
+        Number(
+          runStats.jumpsThisRun || 0
+        ),
+
+      totalShieldPickups:
+        Number(
+          save.totalShieldPickups || 0
+        ) +
+        Number(
+          runStats.shieldsPickedUp || 0
+        ),
+    });
+
+    setSaveData(await loadSave());
 
     setLastResult({
       score,
@@ -326,8 +371,13 @@ function GameRoot() {
   };
 
   const startPlaying = () => {
-    setGameKey((value) => value + 1);
-    setAppState(APP_STATE.PLAYING);
+    setGameKey(
+      (value) => value + 1
+    );
+
+    setAppState(
+      APP_STATE.PLAYING
+    );
   };
 
   const renderScreen = () => {
@@ -336,7 +386,9 @@ function GameRoot() {
         return (
           <LoadingScreen
             onFinishLoading={() =>
-              setAppState(APP_STATE.MENU)
+              setAppState(
+                APP_STATE.MENU
+              )
             }
           />
         );
@@ -346,13 +398,19 @@ function GameRoot() {
           <MenuScreen
             onPlay={startPlaying}
             onShop={() =>
-              setAppState(APP_STATE.SHOP)
+              setAppState(
+                APP_STATE.SHOP
+              )
             }
             onChallenges={() =>
-              setAppState(APP_STATE.CHALLENGES)
+              setAppState(
+                APP_STATE.CHALLENGES
+              )
             }
             onOptions={() =>
-              setAppState(APP_STATE.OPTIONS)
+              setAppState(
+                APP_STATE.OPTIONS
+              )
             }
           />
         );
@@ -363,11 +421,19 @@ function GameRoot() {
             key={gameKey}
             onGameOver={handleGameOver}
             onPause={() =>
-              setAppState(APP_STATE.PAUSED)
+              setAppState(
+                APP_STATE.PAUSED
+              )
             }
-            upgradeLevels={upgradeLevelsRef.current}
-            settings={settingsRef.current}
-            skinColors={skinColorsRef.current}
+            upgradeLevels={
+              upgradeLevelsRef.current
+            }
+            settings={
+              settingsRef.current
+            }
+            skinColors={
+              skinColorsRef.current
+            }
           />
         );
 
@@ -375,11 +441,15 @@ function GameRoot() {
         return (
           <PauseScreen
             onResume={() =>
-              setAppState(APP_STATE.PLAYING)
+              setAppState(
+                APP_STATE.PLAYING
+              )
             }
             onRestart={startPlaying}
             onMenu={() =>
-              setAppState(APP_STATE.MENU)
+              setAppState(
+                APP_STATE.MENU
+              )
             }
           />
         );
@@ -389,11 +459,21 @@ function GameRoot() {
           <GameOverScreen
             score={lastResult.score}
             coins={lastResult.coins}
-            isNewHigh={lastResult.isNewHigh}
-            runLog={saveData?.runLog || []}
-            onRetry={startPlaying}
+            isNewHigh={
+              lastResult.isNewHigh
+            }
+            runLog={
+              saveData?.runLog || []
+            }
+            onRetry={() =>
+              setAppState(
+                APP_STATE.MENU
+              )
+            }
             onMenu={() =>
-              setAppState(APP_STATE.MENU)
+              setAppState(
+                APP_STATE.MENU
+              )
             }
           />
         );
@@ -403,7 +483,10 @@ function GameRoot() {
           <ShopScreen
             onBack={async () => {
               await refreshSave();
-              setAppState(APP_STATE.MENU);
+
+              setAppState(
+                APP_STATE.MENU
+              );
             }}
           />
         );
@@ -412,7 +495,9 @@ function GameRoot() {
         return (
           <ChallengesScreen
             onBack={() =>
-              setAppState(APP_STATE.MENU)
+              setAppState(
+                APP_STATE.MENU
+              )
             }
           />
         );
@@ -422,7 +507,10 @@ function GameRoot() {
           <OptionsScreen
             onBack={async () => {
               await refreshSave();
-              setAppState(APP_STATE.MENU);
+
+              setAppState(
+                APP_STATE.MENU
+              );
             }}
           />
         );
@@ -432,7 +520,10 @@ function GameRoot() {
     }
   };
 
-  if (!themeReady || !orientationReady) {
+  if (
+    !themeReady ||
+    !orientationReady
+  ) {
     return null;
   }
 
@@ -440,23 +531,63 @@ function GameRoot() {
     <View style={styles.root}>
       <StatusBar hidden />
 
+      {/*
+       * The viewport uses COVER scaling.
+       *
+       * Example:
+       * 1600x720 display
+       * 800x450 virtual game
+       *
+       * scale = 2
+       * rendered game = 1600x900
+       *
+       * The extra 180px vertical area is cropped
+       * evenly, eliminating the old black strip.
+       */}
       <View
         style={[
           styles.viewport,
           {
-            width: virtualWidth,
-            height: virtualHeight,
-            transform: [
-              { translateX },
-              { translateY },
-              { scale },
-            ],
+            width:
+              virtualWidth * scale,
+
+            height:
+              virtualHeight * scale,
+
+            left: translateX,
+            top: translateY,
+
             backgroundColor:
               theme.colors.screenBg,
           },
         ]}
       >
-        {renderScreen()}
+        <View
+          style={{
+            width: virtualWidth,
+            height: virtualHeight,
+
+            position: 'absolute',
+
+            left:
+              (virtualWidth * scale -
+                virtualWidth) /
+              2,
+
+            top:
+              (virtualHeight * scale -
+                virtualHeight) /
+              2,
+
+            transform: [
+              {
+                scale,
+              },
+            ],
+          }}
+        >
+          {renderScreen()}
+        </View>
       </View>
     </View>
   );
@@ -479,12 +610,6 @@ const styles = StyleSheet.create({
 
   viewport: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-
-    justifyContent: 'center',
-    alignItems: 'center',
-
     overflow: 'hidden',
   },
 });

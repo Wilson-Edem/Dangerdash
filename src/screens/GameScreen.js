@@ -53,8 +53,10 @@ export default function GameScreen({
   });
 
   const showHUD =
-    gameState === GAME_CONFIG.STATE.PLAYING ||
-    gameState === GAME_CONFIG.STATE.GAMEOVER;
+    gameState ===
+      GAME_CONFIG.STATE.PLAYING ||
+    gameState ===
+      GAME_CONFIG.STATE.GAMEOVER;
 
   return (
     <TouchableWithoutFeedback
@@ -64,7 +66,9 @@ export default function GameScreen({
         <GameCanvas
           playerX={playerX}
           playerY={playerY}
-          powerJumpFlash={powerJumpFlash}
+          powerJumpFlash={
+            powerJumpFlash
+          }
           platforms={platforms}
           items={items}
           score={score}
@@ -76,8 +80,12 @@ export default function GameScreen({
           gameState={gameState}
           activePower={activePower}
           combo={combo}
-          gravityFlipped={gravityFlipped}
-          deathFadeAlpha={deathFadeAlpha}
+          gravityFlipped={
+            gravityFlipped
+          }
+          deathFadeAlpha={
+            deathFadeAlpha
+          }
           skinColors={skinColors}
         />
 
@@ -88,12 +96,22 @@ export default function GameScreen({
               style={styles.leftHUD}
               pointerEvents="none"
             >
-              <View style={styles.hudPanel}>
-                <Text style={styles.scoreLabel}>
+              <View
+                style={styles.hudPanel}
+              >
+                <Text
+                  style={
+                    styles.scoreLabel
+                  }
+                >
                   SCORE
                 </Text>
 
-                <Text style={styles.scoreValue}>
+                <Text
+                  style={
+                    styles.scoreValue
+                  }
+                >
                   {String(score).padStart(
                     6,
                     '0'
@@ -101,11 +119,15 @@ export default function GameScreen({
                 </Text>
 
                 <View
-                  style={styles.divider}
+                  style={
+                    styles.divider
+                  }
                 />
 
                 <View
-                  style={styles.smallStat}
+                  style={
+                    styles.smallStat
+                  }
                 >
                   <Text
                     style={
@@ -120,7 +142,8 @@ export default function GameScreen({
                       styles.smallValue,
                       {
                         color:
-                          theme.colors.coinGold,
+                          theme.colors
+                            .coinGold,
                       },
                     ]}
                   >
@@ -129,7 +152,9 @@ export default function GameScreen({
                 </View>
 
                 <View
-                  style={styles.smallStat}
+                  style={
+                    styles.smallStat
+                  }
                 >
                   <Text
                     style={
@@ -169,7 +194,9 @@ export default function GameScreen({
             >
               {combo > 0 && (
                 <View
-                  style={styles.comboBadge}
+                  style={
+                    styles.comboBadge
+                  }
                 >
                   <Text
                     style={
@@ -210,9 +237,12 @@ export default function GameScreen({
                       },
                     ]}
                   >
-                    {PALETTE.POWER_ICONS[
-                      activePower
-                    ]}{' '}
+                    {
+                      PALETTE
+                        .POWER_ICONS[
+                        activePower
+                      ]
+                    }{' '}
                     {activePower}
                   </Text>
 
@@ -235,11 +265,15 @@ export default function GameScreen({
               onPause && (
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  style={styles.pauseButton}
+                  style={
+                    styles.pauseButton
+                  }
                   onPress={onPause}
                 >
                   <Text
-                    style={styles.pauseText}
+                    style={
+                      styles.pauseText
+                    }
                   >
                     ❚❚
                   </Text>
@@ -252,21 +286,31 @@ export default function GameScreen({
         {gameState ===
           GAME_CONFIG.STATE.MENU && (
           <View
-            style={styles.centerOverlay}
+            style={
+              styles.centerOverlay
+            }
             pointerEvents="none"
           >
-            <Text style={styles.titleText}>
+            <Text
+              style={
+                styles.titleText
+              }
+            >
               DANGER DASH
             </Text>
 
             <Text
-              style={styles.subtitleText}
+              style={
+                styles.subtitleText
+              }
             >
               MOBILE • BY VHITE
             </Text>
 
             <Text
-              style={styles.promptText}
+              style={
+                styles.promptText
+              }
             >
               TAP ANYWHERE TO RUN
             </Text>
@@ -278,11 +322,15 @@ export default function GameScreen({
           GAME_CONFIG.STATE.GAMEOVER &&
           deathFadeAlpha >= 0.7 && (
             <View
-              style={styles.centerOverlay}
+              style={
+                styles.centerOverlay
+              }
               pointerEvents="none"
             >
               <Text
-                style={styles.gameOverText}
+                style={
+                  styles.gameOverText
+                }
               >
                 GAME OVER
               </Text>
@@ -296,7 +344,9 @@ export default function GameScreen({
               </Text>
 
               <Text
-                style={styles.promptText}
+                style={
+                  styles.promptText
+                }
               >
                 SAVING RUN...
               </Text>
@@ -317,15 +367,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
 
+  /*
+   * These values are in the 800x450 virtual
+   * coordinate system.
+   *
+   * The cover-scaled App viewport crops the
+   * extra vertical area on wide displays.
+   */
   leftHUD: {
     position: 'absolute',
-    top: 16,
+    top: 55,
     left: 16,
   },
 
   rightHUD: {
     position: 'absolute',
-    top: 16,
+    top: 55,
     right: 78,
     alignItems: 'flex-end',
   },
@@ -364,7 +421,8 @@ const styles = StyleSheet.create({
 
   smallStat: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     alignItems: 'center',
     marginTop: 3,
   },
@@ -441,7 +499,7 @@ const styles = StyleSheet.create({
 
   pauseButton: {
     position: 'absolute',
-    top: 15,
+    top: 55,
     right: 15,
     width: 46,
     height: 46,

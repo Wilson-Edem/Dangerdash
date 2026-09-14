@@ -9,16 +9,7 @@ export function useResponsiveCanvas() {
     height: windowHeight,
   } = useWindowDimensions();
 
-  /*
-   * Contain scaling:
-   *
-   * - Preserves the complete 800x450 game world.
-   * - Never rotates the game.
-   * - Never stretches the game.
-   * - Prevents important HUD/gameplay elements from
-   *   being cropped off-screen.
-   */
-  const scale = Math.min(
+  const scale = Math.max(
     windowWidth / VIRTUAL_WIDTH,
     windowHeight / VIRTUAL_HEIGHT
   );
