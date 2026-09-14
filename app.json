@@ -27,6 +27,13 @@
     },
     "plugins": [
       [
+        "expo-notifications",
+        {
+          "color": "#FF1744",
+          "defaultChannel": "daily-challenges"
+        }
+      ],
+      [
         "expo-audio",
         {
           "enableBackgroundPlayback": true

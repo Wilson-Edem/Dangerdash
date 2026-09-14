@@ -61,7 +61,13 @@ export const GAME_CONFIG = {
   // PLATFORMS
   // =========================
 
-  GROUND_Y: 200,
+  /*
+   * 225 / 450 = 50%.
+   *
+   * The platform surface is therefore exactly halfway
+   * down the virtual game canvas.
+   */
+  GROUND_Y: 225,
 
   PLATFORM_HEIGHT: 180,
 
@@ -69,10 +75,6 @@ export const GAME_CONFIG = {
 
   MAX_PLATFORM_WIDTH: 420,
 
-  /*
-   * Smaller gaps make the early game playable
-   * while still requiring jumps.
-   */
   STANDARD_GAP: 65,
 
   MAX_GAP: 115,
@@ -146,11 +148,14 @@ export const GAME_CONFIG = {
   // WATER
   // =========================
 
-  WATER_LEVEL_Y: 340,
+  /*
+   * Raised from 340 to 315 so the water is visibly higher
+   * and a falling player reaches it shortly after leaving
+   * a platform.
+   */
+  WATER_LEVEL_Y: 315,
 
   FALL_DEATH_Y: 365,
-
-  
 
   MUSIC_BASE_VOLUME: 0.5,
 

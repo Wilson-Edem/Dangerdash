@@ -1,65 +1,143 @@
 import React from 'react';
-import { Group, Rect, useImage, ImageShader } from '@shopify/react-native-skia';
+
+import {
+  Group,
+  Rect,
+  useImage,
+  ImageShader,
+  LinearGradient,
+  vec,
+} from '@shopify/react-native-skia';
+
 import { useTheme } from '../context/ThemeContext';
-import { GAME_CONFIG } from '../constants/gameConfig';
 
 const TILE_SIZE = 64;
 
-export default function Platform({ platforms }) {
-  const { theme } = useTheme();
-  const platformTile = useImage(theme.assets.platformTileset);
+export default function Platform({
+  platforms,
+}) {
+  const {
+    theme,
+    themeKey,
+  } = useTheme();
+
+  const platformTile =
+    useImage(
+      theme.assets
+        .platformTileset
+    );
 
   return (
-    <Group>
-      {platforms.map((plat) => (
-        <Group key={plat.id}>
-          {/* Base dark body */}
-          <Rect
-            x={plat.x}
-            y={plat.y}
-            width={plat.width}
-            height={plat.height}
-            color={theme.colors.platformBase}
-          />
-
-          {/* Tiled texture — repeat across the platform */}
-          {platformTile && (
+    <Group
+      key={`platform-theme-${themeKey}`}
+    >
+      {platforms.map(
+        (plat) => (
+          <Group
+            key={`${themeKey}-${plat.id}`}
+          >
             <Rect
               x={plat.x}
               y={plat.y}
-              width={plat.width}
-              height={plat.height}
+              width={
+                plat.width
+              }
+              height={
+                plat.height
+              }
+              color={
+                theme.colors
+                  .platformBase
+              }
+            />
+
+            {platformTile && (
+              <Rect
+                x={plat.x}
+                y={plat.y}
+                width={
+                  plat.width
+                }
+                height={
+                  plat.height
+                }
+              >
+                <ImageShader
+                  image={
+                    platformTile
+                  }
+                  fit="none"
+                  rect={{
+                    x: 0,
+                    y: 0,
+                    width:
+                      TILE_SIZE,
+                    height:
+                      TILE_SIZE,
+                  }}
+                  tx="repeat"
+                  ty="repeat"
+                />
+              </Rect>
+            )}
+
+            {/* Green gradient platform surface */}
+            <Rect
+              x={plat.x}
+              y={plat.y}
+              width={
+                plat.width
+              }
+              height={6}
             >
-              <ImageShader
-                image={platformTile}
-                fit="none"
-                rect={{ x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE }}
-                tx="repeat"
-                ty="repeat"
+              <LinearGradient
+                start={vec(0, 0)}
+                end={vec(
+                  plat.width,
+                  0
+                )}
+                colors={[
+                  theme.colors
+                    .platformTopEdgeStart ||
+                    '#7CFF7A',
+
+                  theme.colors
+                    .platformTopEdgeEnd ||
+                    '#16C172',
+                ]}
               />
             </Rect>
-          )}
 
-          {/* Bright top edge — the "surface" the player lands on */}
-          <Rect
-            x={plat.x}
-            y={plat.y}
-            width={plat.width}
-            height={6}
-            color={theme.colors.platformTopEdge}
-          />
+            <Rect
+              x={plat.x}
+              y={
+                plat.y + 6
+              }
+              width={
+                plat.width
+              }
+              height={2}
+            >
+              <LinearGradient
+                start={vec(0, 0)}
+                end={vec(
+                  plat.width,
+                  0
+                )}
+                colors={[
+                  theme.colors
+                    .platformTopEdgeStart ||
+                    '#7CFF7A',
 
-          {/* Thin highlight line below the top edge */}
-          <Rect
-            x={plat.x}
-            y={plat.y + 6}
-            width={plat.width}
-            height={2}
-            color={theme.colors.platformTopEdge}
-            opacity={0.5}
-          />
-        </Group>
-      ))}
+                  theme.colors
+                    .platformTopEdgeEnd ||
+                    '#16C172',
+                ]}
+              />
+            </Rect>
+          </Group>
+        )
+      )}
     </Group>
   );
 }

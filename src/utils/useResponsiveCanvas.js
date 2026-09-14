@@ -9,29 +9,57 @@ export function useResponsiveCanvas() {
     height: windowHeight,
   } = useWindowDimensions();
 
-  const scale = Math.max(
-    windowWidth / VIRTUAL_WIDTH,
-    windowHeight / VIRTUAL_HEIGHT
-  );
+  const safeWidth =
+    Math.max(
+      1,
+      windowWidth
+    );
+
+  const safeHeight =
+    Math.max(
+      1,
+      windowHeight
+    );
+
+  const scale =
+    Math.min(
+      safeWidth /
+        VIRTUAL_WIDTH,
+
+      safeHeight /
+        VIRTUAL_HEIGHT
+    );
 
   const renderedWidth =
-    VIRTUAL_WIDTH * scale;
+    VIRTUAL_WIDTH *
+    scale;
 
   const renderedHeight =
-    VIRTUAL_HEIGHT * scale;
+    VIRTUAL_HEIGHT *
+    scale;
 
   const translateX =
-    (windowWidth - renderedWidth) / 2;
+    (safeWidth -
+      renderedWidth) /
+    2;
 
   const translateY =
-    (windowHeight - renderedHeight) / 2;
+    (safeHeight -
+      renderedHeight) /
+    2;
 
   return {
-    windowWidth,
-    windowHeight,
+    windowWidth:
+      safeWidth,
 
-    virtualWidth: VIRTUAL_WIDTH,
-    virtualHeight: VIRTUAL_HEIGHT,
+    windowHeight:
+      safeHeight,
+
+    virtualWidth:
+      VIRTUAL_WIDTH,
+
+    virtualHeight:
+      VIRTUAL_HEIGHT,
 
     scale,
 

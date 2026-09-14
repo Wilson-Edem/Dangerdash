@@ -8,9 +8,12 @@ const DEFAULT_SAVE = {
 
   highScore: 0,
 
-  ownedSkins: ['default'],
+  ownedSkins: [
+    'default',
+  ],
 
-  equippedSkin: 'default',
+  equippedSkin:
+    'default',
 
   upgrades: {
     extra_jump: 0,
@@ -20,20 +23,23 @@ const DEFAULT_SAVE = {
 
   runLog: [],
 
-  /*
-   * Daily challenge progress.
-   *
-   * {
-   *   challengeId: currentCount
-   * }
-   */
   challengeProgress: {},
 
-  challengeProgressDate: '',
+  challengeProgressDate:
+    '',
 
-  challengeClaimedDate: '',
+  challengeClaimedDate:
+    '',
 
-  challengeCompletedIds: [],
+  challengeCompletedIds:
+    [],
+
+  /*
+   * Challenges completed today but not yet claimed.
+   * These IDs drive the red DAILY button badge.
+   */
+  challengeNotificationIds:
+    [],
 
   totalRunsPlayed: 0,
 
@@ -50,14 +56,9 @@ const DEFAULT_SAVE = {
 
 let cachedSave = null;
 
-/*
- * Use the device's local calendar date.
- *
- * Example:
- * 2026-9-14
- */
 function getLocalDateKey() {
-  const d = new Date();
+  const d =
+    new Date();
 
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
@@ -66,10 +67,6 @@ export async function loadSave() {
   const today =
     getLocalDateKey();
 
-  /*
-   * If save data is already cached, still check
-   * whether the calendar day has changed.
-   */
   if (cachedSave) {
     if (
       cachedSave.challengeProgressDate !==
@@ -80,7 +77,11 @@ export async function loadSave() {
 
         challengeProgress: {},
 
-        challengeCompletedIds: [],
+        challengeCompletedIds:
+          [],
+
+        challengeNotificationIds:
+          [],
 
         challengeProgressDate:
           today,
@@ -106,9 +107,6 @@ export async function loadSave() {
         KEY
       );
 
-    /*
-     * Brand-new save.
-     */
     if (!raw) {
       cachedSave = {
         ...DEFAULT_SAVE,
@@ -126,12 +124,12 @@ export async function loadSave() {
     cachedSave = {
       ...DEFAULT_SAVE,
       ...parsed,
+
+      challengeNotificationIds:
+        parsed.challengeNotificationIds ||
+        [],
     };
 
-    /*
-     * Daily challenges reset when the device
-     * enters a new local calendar date.
-     */
     if (
       cachedSave.challengeProgressDate !==
       today
@@ -140,6 +138,9 @@ export async function loadSave() {
         {};
 
       cachedSave.challengeCompletedIds =
+        [];
+
+      cachedSave.challengeNotificationIds =
         [];
 
       cachedSave.challengeProgressDate =
@@ -263,7 +264,8 @@ export async function equipSkin(
   skinId
 ) {
   await writeSave({
-    equippedSkin: skinId,
+    equippedSkin:
+      skinId,
   });
 }
 
@@ -324,14 +326,17 @@ export async function recordRun(
       save.totalCoins +
       coins,
 
-    highScore: isHigh
-      ? score
-      : save.highScore,
+    highScore:
+      isHigh
+        ? score
+        : save.highScore,
 
-    runLog: newLog,
+    runLog:
+      newLog,
 
     totalRunsPlayed:
-      save.totalRunsPlayed + 1,
+      save.totalRunsPlayed +
+      1,
   });
 
   return isHigh;
