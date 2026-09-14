@@ -36,7 +36,6 @@ import {
 } from './src/utils/saveManager';
 
 import {
-  initializeNotifications,
   notifyChallengeCompleted,
   setNotificationBadgeCount,
 } from './src/utils/notificationManager';
@@ -142,11 +141,7 @@ function GameRoot() {
       try {
         await enableImmersiveMode();
 
-        /*
-         * Notification channels/permission are initialized
-         * before any daily challenge can be completed.
-         */
-        await initializeNotifications();
+      
 
         await initAudioSession();
         await preloadAllAudio();

@@ -1,45 +1,98 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
-const CHANNEL_ID =
-  'daily-challenges';
+const CHANNEL_ID = 'daily-challenges';
 
-Notifications.setNotificationHandler({
-  handleNotification:
-    async () => ({
-      shouldPlaySound:
-        true,
+let Notifications = null;
+let notificationHandlerConfigured = false;
 
-      shouldSetBadge:
-        true,
+/*
+ * Expo Go on Android does not support remote push notifications.
+ *
+ * We deliberately DO NOT import expo-notifications at module startup.
+ * Importing it immediately can cause Expo Go to initialize the
+ * push-token path and throw the SDK 53+ Expo Go error.
+ *
+ * Local notifications will work in a development/standalone build.
+ */
 
-      shouldShowBanner:
-        true,
+function isExpoGo() {
+  /*
+   * appOwnership is deprecated but remains useful for identifying
+   * Expo Go specifically.
+   */
+  return Constants.appOwnership === 'expo';
+}
 
-      shouldShowList:
-        true,
-    }),
-});
+async function loadNotifications() {
+  /*
+   * Never load expo-notifications inside Expo Go.
+   *
+   * This prevents:
+   * warnOfExpoGoPushUsage
+   * addPushTokenListener
+   */
+  if (isExpoGo()) {
+    return null;
+  }
 
-export async function initializeNotifications() {
+  if (Notifications) {
+    return Notifications;
+  }
+
   try {
-    if (
-      Platform.OS ===
-      'android'
-    ) {
-      await Notifications.setNotificationChannelAsync(
+    const module = await import('expo-notifications');
+
+    Notifications = module;
+
+    if (!notificationHandlerConfigured) {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+
+      notificationHandlerConfigured = true;
+    }
+
+    return Notifications;
+  } catch (error) {
+    console.warn(
+      'expo-notifications could not be loaded:',
+      error
+    );
+
+    return null;
+  }
+}
+
+/*
+ * Optional initialization.
+ *
+ * We no longer call this during app startup.
+ * It can safely be called later by a development/standalone build.
+ */
+export async function initializeNotifications() {
+  const NotificationsModule = await loadNotifications();
+
+  if (!NotificationsModule) {
+    return false;
+  }
+
+  try {
+    if (Platform.OS === 'android') {
+      await NotificationsModule.setNotificationChannelAsync(
         CHANNEL_ID,
         {
-          name:
-            'Daily Challenges',
-
+          name: 'Daily Challenges',
           description:
             'Danger Dash daily challenge completions',
 
           importance:
-            Notifications
-              .AndroidImportance
-              .HIGH,
+            NotificationsModule.AndroidImportance.HIGH,
 
           vibrationPattern: [
             0,
@@ -48,28 +101,25 @@ export async function initializeNotifications() {
             180,
           ],
 
-          lightColor:
-            '#FF1744',
+          lightColor: '#FF1744',
         }
       );
     }
 
     const permissions =
-      await Notifications.getPermissionsAsync();
+      await NotificationsModule.getPermissionsAsync();
 
-    if (
-      permissions.granted
-    ) {
+    if (permissions.granted) {
       return true;
     }
 
     const requested =
-      await Notifications.requestPermissionsAsync();
+      await NotificationsModule.requestPermissionsAsync();
 
     return requested.granted;
   } catch (error) {
     console.warn(
-      'Notification setup failed:',
+      'Notification permission setup failed:',
       error
     );
 
@@ -77,9 +127,35 @@ export async function initializeNotifications() {
   }
 }
 
+/*
+ * Sends a LOCAL notification when a daily challenge is completed.
+ *
+ * This does NOT use:
+ * - getExpoPushTokenAsync()
+ * - getDevicePushTokenAsync()
+ * - addPushTokenListener()
+ *
+ * Therefore this feature is local notification functionality,
+ * not remote push notification functionality.
+ */
 export async function notifyChallengeCompleted(
   challenge
 ) {
+  const NotificationsModule =
+    await loadNotifications();
+
+  /*
+   * When running inside Expo Go, simply skip the system
+   * notification instead of crashing the application.
+   */
+  if (!NotificationsModule) {
+    console.log(
+      'Daily challenge notification skipped: Expo Go does not support this notification path.'
+    );
+
+    return false;
+  }
+
   try {
     const granted =
       await initializeNotifications();
@@ -88,33 +164,29 @@ export async function notifyChallengeCompleted(
       return false;
     }
 
-    await Notifications.scheduleNotificationAsync(
-      {
-        content: {
-          title:
-            'DAILY CHALLENGE COMPLETE! 🏆',
+    await NotificationsModule.scheduleNotificationAsync({
+      content: {
+        title:
+          'DAILY CHALLENGE COMPLETE! 🏆',
 
-          body:
-            `${challenge.text} — reward ready: 🪙 ${challenge.reward}`,
+        body:
+          `${challenge.text} — reward ready: 🪙 ${challenge.reward}`,
 
-          data: {
-            type:
-              'daily_challenge',
-
-            challengeId:
-              challenge.id,
-          },
-
-          color:
-            '#FF1744',
-
-          sound:
-            'default',
+        data: {
+          type: 'daily_challenge',
+          challengeId: challenge.id,
         },
 
-        trigger: null,
-      }
-    );
+        sound: 'default',
+
+        color: '#FF1744',
+      },
+
+      /*
+       * null means deliver immediately.
+       */
+      trigger: null,
+    });
 
     return true;
   } catch (error) {
@@ -127,19 +199,34 @@ export async function notifyChallengeCompleted(
   }
 }
 
+/*
+ * Updates the Android app notification badge.
+ */
 export async function setNotificationBadgeCount(
   count
 ) {
+  const NotificationsModule =
+    await loadNotifications();
+
+  if (!NotificationsModule) {
+    return false;
+  }
+
   try {
-    await Notifications.setBadgeCountAsync(
+    await NotificationsModule.setBadgeCountAsync(
       Math.max(
         0,
         Number(count) || 0
       )
     );
+
+    return true;
   } catch (error) {
-    /*
-     * Badge APIs are platform/device dependent.
-     */
+    console.warn(
+      'Notification badge update failed:',
+      error
+    );
+
+    return false;
   }
 }
