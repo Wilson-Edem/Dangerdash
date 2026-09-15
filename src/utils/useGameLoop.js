@@ -18,13 +18,9 @@ import {
 
 import { speakQuip } from './ttsManager';
 
-import {
-  getRandomQuip,
-} from '../constants/quips';
+import { getRandomQuip } from '../constants/quips';
 
-import {
-  generatePowerName,
-} from './proceduralNames';
+import { generatePowerName } from './proceduralNames';
 
 const POWER_TYPES =
   GAME_CONFIG.POWER_TYPES;
@@ -33,9 +29,7 @@ const ITEM_TYPES =
   GAME_CONFIG.ITEM_TYPES;
 
 const POWER_KEYS =
-  Object.values(
-    POWER_TYPES
-  );
+  Object.values(POWER_TYPES);
 
 export function useGameLoop({
   onGameOver,
@@ -52,88 +46,60 @@ export function useGameLoop({
     vibrationOn: true,
   },
 }) {
-  const [
-    gameState,
-    setGameState,
-  ] = useState(
-    GAME_CONFIG.STATE.MENU
-  );
+  const [gameState, setGameState] =
+    useState(
+      GAME_CONFIG.STATE.MENU
+    );
 
-  const [
-    score,
-    setScore,
-  ] = useState(0);
+  const [score, setScore] =
+    useState(0);
 
-  const [
-    coins,
-    setCoins,
-  ] = useState(0);
+  const [coins, setCoins] =
+    useState(0);
 
-  const [
-    health,
-    setHealth,
-  ] = useState(
-    GAME_CONFIG.MAX_HEALTH
-  );
+  const [health, setHealth] =
+    useState(
+      GAME_CONFIG.MAX_HEALTH
+    );
 
-  const [
-    hasShield,
-    setHasShield,
-  ] = useState(false);
+  const [hasShield, setHasShield] =
+    useState(false);
 
-  const [
-    isGrounded,
-    setIsGrounded,
-  ] = useState(false);
+  const [isGrounded, setIsGrounded] =
+    useState(false);
 
-  const [
-    animFrame,
-    setAnimFrame,
-  ] = useState(0);
+  const [animFrame, setAnimFrame] =
+    useState(0);
 
-  const [
-    playerX,
-    setPlayerX,
-  ] = useState(
-    GAME_CONFIG.PLAYER_START_X
-  );
+  const [playerX, setPlayerX] =
+    useState(
+      GAME_CONFIG.PLAYER_START_X
+    );
 
-  const [
-    playerY,
-    setPlayerY,
-  ] = useState(
-    GAME_CONFIG.PLAYER_START_Y
-  );
+  const [playerY, setPlayerY] =
+    useState(
+      GAME_CONFIG.PLAYER_START_Y
+    );
 
   const [
     powerJumpFlash,
     setPowerJumpFlash,
   ] = useState(0);
 
-  const [
-    platforms,
-    setPlatforms,
-  ] = useState([]);
+  const [platforms, setPlatforms] =
+    useState([]);
 
-  const [
-    items,
-    setItems,
-  ] = useState([]);
+  const [items, setItems] =
+    useState([]);
 
-  const [
-    activePower,
-    setActivePower,
-  ] = useState(null);
+  const [activePower, setActivePower] =
+    useState(null);
 
-  const [
-    powerTimer,
-    setPowerTimer,
-  ] = useState(0);
+  const [powerTimer, setPowerTimer] =
+    useState(0);
 
-  const [
-    combo,
-    setCombo,
-  ] = useState(0);
+  const [combo, setCombo] =
+    useState(0);
 
   const [
     gravityFlipped,
@@ -145,20 +111,16 @@ export function useGameLoop({
     setDeathFadeAlpha,
   ] = useState(0);
 
-  const [
-    powerName,
-    setPowerName,
-  ] = useState('');
+  const [powerName, setPowerName] =
+    useState('');
 
   // =========================
   // REFS
   // =========================
 
-  const playerYRef =
-    useRef(
-      GAME_CONFIG
-        .PLAYER_START_Y
-    );
+  const playerYRef = useRef(
+    GAME_CONFIG.PLAYER_START_Y
+  );
 
   const playerVelocityYRef =
     useRef(0);
@@ -221,15 +183,6 @@ export function useGameLoop({
   const lastPowerJumpTimestampRef =
     useRef(0);
 
-  /*
-   * Jump input is queued here and consumed inside the
-   * animation frame. This removes a common mobile issue
-   * where a touch arrives between two RAF updates and
-   * the jump state gets immediately overwritten.
-   */
-  const jumpRequestedRef =
-    useRef(null);
-
   const distanceTraveledRef =
     useRef(0);
 
@@ -251,6 +204,16 @@ export function useGameLoop({
   const rafIdRef =
     useRef(null);
 
+  /*
+   * This is the important physics change.
+   *
+   * We measure the actual elapsed time between
+   * animation frames instead of pretending every
+   * frame has the same duration.
+   */
+  const lastFrameTimeRef =
+    useRef(0);
+
   const deathFadeRef =
     useRef(0);
 
@@ -261,29 +224,17 @@ export function useGameLoop({
   const runStatsRef =
     useRef({
       coinsThisRun: 0,
-
       maxScore: 0,
-
       maxCombo: 0,
-
       surviveFrames: 0,
-
       powerupsUsed: 0,
-
       orbsCollected: 0,
-
       shieldsPickedUp: 0,
-
       gravityUses: 0,
-
       doublerUses: 0,
-
       maxSpeed: 0,
-
       jumpsThisRun: 0,
-
       deaths: 0,
-
       newHighScore: 0,
     });
 
@@ -301,63 +252,46 @@ export function useGameLoop({
 
   const magnetRadiusRef =
     useRef(
-      GAME_CONFIG
-        .MAGNET_RADIUS
+      GAME_CONFIG.MAGNET_RADIUS
     );
 
   useEffect(() => {
     maxJumpsRef.current =
       1 +
-      (
-        upgradeLevels
-          .extra_jump || 0
-      );
+      (upgradeLevels.extra_jump ||
+        0);
 
     gravityRef.current =
       GAME_CONFIG.GRAVITY *
       (
         1 -
         0.05 *
-          (
-            upgradeLevels
-              .slow_fall || 0
-          )
+        (upgradeLevels.slow_fall ||
+          0)
       );
 
     magnetRadiusRef.current =
-      GAME_CONFIG
-        .MAGNET_RADIUS +
+      GAME_CONFIG.MAGNET_RADIUS +
       30 *
-        (
-          upgradeLevels
-            .magnet_range || 0
-        );
-  }, [
-    upgradeLevels,
-  ]);
+      (upgradeLevels.magnet_range ||
+        0);
+  }, [upgradeLevels]);
 
   useEffect(() => {
     gameStateRef.current =
       gameState;
-  }, [
-    gameState,
-  ]);
+  }, [gameState]);
 
-  const pickRandomPower =
-    () =>
-      POWER_KEYS[
-        Math.floor(
-          Math.random() *
-            POWER_KEYS.length
-        )
-      ];
+  const pickRandomPower = () =>
+    POWER_KEYS[
+      Math.floor(
+        Math.random() *
+        POWER_KEYS.length
+      )
+    ];
 
-  const haptic = (
-    style
-  ) => {
-    if (
-      !settings.vibrationOn
-    ) {
+  const haptic = (style) => {
+    if (!settings.vibrationOn) {
       return;
     }
 
@@ -372,96 +306,119 @@ export function useGameLoop({
   // ITEM SPAWNER
   // =========================
 
-  const spawnItemsForPlatform =
-    (plat) => {
-      const spawned = [];
+  const spawnItemsForPlatform = (
+    plat
+  ) => {
+    const spawned = [];
 
-      const hazardRoll =
-        Math.random();
+    const hazardRoll =
+      Math.random();
 
-      let hasHazard =
-        false;
+    let hasHazard = false;
 
-      if (
-        plat.width >
-          220 &&
-        hazardRoll <
-          0.35
-      ) {
-        spawned.push({
-          id:
-            `spike_${plat.id}`,
+    if (
+      plat.width > 220 &&
+      hazardRoll < 0.35
+    ) {
+      spawned.push({
+        id:
+          `spike_${plat.id}`,
 
-          type:
-            ITEM_TYPES.SPIKE,
+        type:
+          ITEM_TYPES.SPIKE,
 
-          x:
-            plat.x +
-            plat.width / 2 -
-            GAME_CONFIG
-              .SPIKE_WIDTH /
-              2,
+        x:
+          plat.x +
+          plat.width / 2 -
+          GAME_CONFIG.SPIKE_WIDTH /
+            2,
 
-          y:
-            plat.y -
-            GAME_CONFIG
-              .SPIKE_HEIGHT,
+        y:
+          plat.y -
+          GAME_CONFIG.SPIKE_HEIGHT,
 
-          width:
-            GAME_CONFIG
-              .SPIKE_WIDTH,
+        width:
+          GAME_CONFIG.SPIKE_WIDTH,
 
-          height:
-            GAME_CONFIG
-              .SPIKE_HEIGHT,
-        });
+        height:
+          GAME_CONFIG.SPIKE_HEIGHT,
+      });
 
-        hasHazard =
-          true;
-      } else if (
-        plat.width >
-          260 &&
-        hazardRoll >=
-          0.35 &&
-        hazardRoll <
-          0.55
-      ) {
-        spawned.push({
-          id:
-            `boost_${plat.id}`,
+      hasHazard = true;
+    } else if (
+      plat.width > 260 &&
+      hazardRoll >= 0.35 &&
+      hazardRoll < 0.55
+    ) {
+      spawned.push({
+        id:
+          `boost_${plat.id}`,
 
-          type:
-            ITEM_TYPES.BOOST_PAD,
+        type:
+          ITEM_TYPES.BOOST_PAD,
 
-          x:
-            plat.x + 40,
+        x:
+          plat.x + 40,
 
-          y:
-            plat.y -
-            GAME_CONFIG
-              .BOOST_PAD_HEIGHT,
+        y:
+          plat.y -
+          GAME_CONFIG.BOOST_PAD_HEIGHT,
 
-          width:
-            GAME_CONFIG
-              .BOOST_PAD_WIDTH,
+        width:
+          GAME_CONFIG.BOOST_PAD_WIDTH,
 
-          height:
-            GAME_CONFIG
-              .BOOST_PAD_HEIGHT,
-        });
-      }
+        height:
+          GAME_CONFIG.BOOST_PAD_HEIGHT,
+      });
 
-      /*
-       * Coins.
-       */
+      hasHazard = true;
+    }
+
+    if (
+      !hasHazard &&
+      Math.random() < 0.14
+    ) {
+      spawned.push({
+        id:
+          `orb_${plat.id}`,
+
+        type:
+          ITEM_TYPES.POWER_ORB,
+
+        powerType:
+          pickRandomPower(),
+
+        x:
+          plat.x +
+          plat.width / 2 -
+          GAME_CONFIG.POWER_ORB_SIZE /
+            2,
+
+        y:
+          plat.y - 75,
+
+        width:
+          GAME_CONFIG.POWER_ORB_SIZE,
+
+        height:
+          GAME_CONFIG.POWER_ORB_SIZE,
+      });
+    }
+
+    if (
+      Math.random() < 0.6
+    ) {
       const coinCount =
-        Math.max(
-          2,
-          Math.floor(
-            plat.width /
-              70
-          )
-        );
+        Math.floor(
+          Math.random() * 3
+        ) + 2;
+
+      const startX =
+        hasHazard
+          ? plat.x +
+            plat.width -
+            100
+          : plat.x + 30;
 
       for (
         let i = 0;
@@ -476,75 +433,29 @@ export function useGameLoop({
             ITEM_TYPES.COIN,
 
           x:
-            plat.x +
-            40 +
-            i * 60,
+            startX +
+            i * 40,
 
           y:
             plat.y -
-            55 -
-            (
-              i % 2
+            50 -
+            Math.sin(
+              (i / coinCount) *
+              Math.PI
             ) *
-              8,
+            20,
 
           width:
-            GAME_CONFIG
-              .COIN_SIZE,
+            GAME_CONFIG.COIN_SIZE,
 
           height:
-            GAME_CONFIG
-              .COIN_SIZE,
+            GAME_CONFIG.COIN_SIZE,
         });
       }
+    }
 
-      /*
-       * Power orb.
-       */
-      if (
-        plat.width >
-          280 &&
-        Math.random() <
-          0.28
-      ) {
-        spawned.push({
-          id:
-            `orb_${plat.id}`,
-
-          type:
-            ITEM_TYPES
-              .POWER_ORB,
-
-          powerType:
-            pickRandomPower(),
-
-          x:
-            plat.x +
-            plat.width -
-            90,
-
-          y:
-            plat.y -
-            90,
-
-          width:
-            GAME_CONFIG
-              .POWER_ORB_SIZE,
-
-          height:
-            GAME_CONFIG
-              .POWER_ORB_SIZE,
-        });
-      }
-
-      /*
-       * `hasHazard` is intentionally kept for future
-       * procedural balancing.
-       */
-      void hasHazard;
-
-      return spawned;
-    };
+    return spawned;
+  };
 
   // =========================
   // START GAME
@@ -552,13 +463,6 @@ export function useGameLoop({
 
   const startGame =
     useCallback(() => {
-      /*
-       * Start exactly on top of the first platform.
-       *
-       * New platform Y = 225
-       * Player height = 66
-       * Player Y = 159
-       */
       playerYRef.current =
         GAME_CONFIG.GROUND_Y -
         GAME_CONFIG.PLAYER_HEIGHT;
@@ -590,6 +494,9 @@ export function useGameLoop({
       frameTickRef.current =
         0;
 
+      lastFrameTimeRef.current =
+        0;
+
       activePowerRef.current =
         null;
 
@@ -617,9 +524,6 @@ export function useGameLoop({
       lastPowerJumpTimestampRef.current =
         0;
 
-      jumpRequestedRef.current =
-        null;
-
       powerJumpFlashRef.current =
         0;
 
@@ -628,6 +532,12 @@ export function useGameLoop({
 
       deathHandledRef.current =
         false;
+
+      longAirStartRef.current =
+        0;
+
+      lastSpeedQuipAtRef.current =
+        0;
 
       runStatsRef.current = {
         coinsThisRun: 0,
@@ -647,35 +557,22 @@ export function useGameLoop({
 
       const initialPlatforms = [
         {
-          id:
-            Date.now(),
-
+          id: Date.now(),
           x: 0,
-
-          y:
-            GAME_CONFIG.GROUND_Y,
-
+          y: GAME_CONFIG.GROUND_Y,
           width: 520,
-
           height:
-            GAME_CONFIG
-              .PLATFORM_HEIGHT,
+            GAME_CONFIG.PLATFORM_HEIGHT,
         },
 
         {
           id:
             Date.now() + 1,
-
           x: 660,
-
-          y:
-            GAME_CONFIG.GROUND_Y,
-
+          y: GAME_CONFIG.GROUND_Y,
           width: 380,
-
           height:
-            GAME_CONFIG
-              .PLATFORM_HEIGHT,
+            GAME_CONFIG.PLATFORM_HEIGHT,
         },
       ];
 
@@ -683,80 +580,53 @@ export function useGameLoop({
         initialPlatforms;
 
       itemsRef.current =
-        initialPlatforms.flatMap(
-          (plat) =>
-            spawnItemsForPlatform(
-              plat
-            )
-        );
+        [];
 
       setPlayerX(
-        GAME_CONFIG
-          .PLAYER_START_X
+        GAME_CONFIG.PLAYER_START_X
       );
 
       setPlayerY(
         GAME_CONFIG.GROUND_Y -
-          GAME_CONFIG
-            .PLAYER_HEIGHT
+        GAME_CONFIG.PLAYER_HEIGHT
       );
 
-      setPowerJumpFlash(
-        0
-      );
+      setPowerJumpFlash(0);
 
       setPlatforms(
         initialPlatforms
       );
 
-      setItems(
-        itemsRef.current
-      );
+      setItems([]);
 
       setScore(0);
 
       setCoins(0);
 
       setHealth(
-        GAME_CONFIG
-          .MAX_HEALTH
+        GAME_CONFIG.MAX_HEALTH
       );
 
-      setHasShield(
-        false
-      );
+      setHasShield(false);
 
-      setIsGrounded(
-        true
-      );
+      setIsGrounded(true);
 
-      setAnimFrame(
-        0
-      );
+      setAnimFrame(0);
 
-      setActivePower(
-        null
-      );
+      setActivePower(null);
 
-      setPowerTimer(
-        0
-      );
+      setPowerTimer(0);
 
       setCombo(0);
 
-      setGravityFlipped(
-        false
-      );
+      setGravityFlipped(false);
 
-      setDeathFadeAlpha(
-        0
-      );
+      setDeathFadeAlpha(0);
 
       setPowerName('');
 
       setGameState(
-        GAME_CONFIG.STATE
-          .PLAYING
+        GAME_CONFIG.STATE.PLAYING
       );
 
       playMusic(
@@ -764,9 +634,7 @@ export function useGameLoop({
       );
 
       speakQuip(
-        getRandomQuip(
-          'START'
-        ),
+        getRandomQuip('START'),
         {
           force: true,
         }
@@ -788,12 +656,11 @@ export function useGameLoop({
       deathHandledRef.current =
         true;
 
-      runStatsRef.current
-        .deaths = 1;
+      runStatsRef.current.deaths =
+        1;
 
       haptic(
-        Haptics
-          .ImpactFeedbackStyle
+        Haptics.ImpactFeedbackStyle
           .Heavy
       );
 
@@ -821,41 +688,32 @@ export function useGameLoop({
           .coinsThisRun;
 
       speakQuip(
-        getRandomQuip(
-          'DEATH'
-        ),
+        getRandomQuip('DEATH'),
         {
           force: true,
         }
       );
 
       setGameState(
-        GAME_CONFIG.STATE
-          .GAMEOVER
+        GAME_CONFIG.STATE.GAMEOVER
       );
 
       const runStats = {
         ...runStatsRef.current,
-
         maxScore:
           finalScore,
       };
 
-      setTimeout(
-        () => {
-          if (onGameOver) {
-            onGameOver(
-              finalScore,
-              finalCoins,
-              runStats
-            );
-          }
-        },
-        900
-      );
-    }, [
-      onGameOver,
-    ]);
+      setTimeout(() => {
+        if (onGameOver) {
+          onGameOver(
+            finalScore,
+            finalCoins,
+            runStats
+          );
+        }
+      }, 900);
+    }, [onGameOver]);
 
   // =========================
   // TAP / JUMP
@@ -865,8 +723,7 @@ export function useGameLoop({
     useCallback(() => {
       if (
         gameStateRef.current !==
-        GAME_CONFIG.STATE
-          .PLAYING
+        GAME_CONFIG.STATE.PLAYING
       ) {
         return;
       }
@@ -883,32 +740,87 @@ export function useGameLoop({
         lastPowerJumpTimestampRef.current;
 
       /*
-       * Second tap within the double-tap window becomes
-       * a power jump.
+       * The jump is applied immediately.
+       *
+       * There is no queued jump waiting for
+       * another React/RAF cycle.
        */
       if (
         timeSinceLastTap <=
-          GAME_CONFIG
-            .DOUBLE_TAP_WINDOW &&
+          GAME_CONFIG.DOUBLE_TAP_WINDOW &&
         timeSinceLastPowerJump >=
-          GAME_CONFIG
-            .POWER_JUMP_COOLDOWN
+          GAME_CONFIG.POWER_JUMP_COOLDOWN
       ) {
-        jumpRequestedRef.current =
-          {
-            type: 'POWER',
-            timestamp: now,
-          };
+        const sign =
+          gravityFlippedRef.current
+            ? -1
+            : 1;
+
+        playerVelocityYRef.current =
+          GAME_CONFIG.POWER_JUMP_FORCE *
+          sign;
+
+        isGroundedRef.current =
+          false;
+
+        jumpCountRef.current =
+          maxJumpsRef.current +
+          1;
+
+        lastPowerJumpTimestampRef.current =
+          now;
+
+        powerJumpFlashRef.current =
+          1;
+
+        setPowerJumpFlash(1);
+
+        haptic(
+          Haptics.ImpactFeedbackStyle
+            .Heavy
+        );
+
+        playSFX(
+          'power_jump'
+        );
+
+        runStatsRef.current
+          .jumpsThisRun += 1;
       } else if (
         isGroundedRef.current ||
         jumpCountRef.current <
           maxJumpsRef.current
       ) {
-        jumpRequestedRef.current =
-          {
-            type: 'NORMAL',
-            timestamp: now,
-          };
+        const sign =
+          gravityFlippedRef.current
+            ? -1
+            : 1;
+
+        const jumpForce =
+          activePowerRef.current ===
+          POWER_TYPES.FLOAT
+            ? GAME_CONFIG.JUMP_FORCE *
+              GAME_CONFIG.FLOAT_JUMP_MULT
+            : GAME_CONFIG.JUMP_FORCE;
+
+        playerVelocityYRef.current =
+          jumpForce * sign;
+
+        isGroundedRef.current =
+          false;
+
+        jumpCountRef.current +=
+          1;
+
+        haptic(
+          Haptics.ImpactFeedbackStyle
+            .Light
+        );
+
+        playSFX('jump');
+
+        runStatsRef.current
+          .jumpsThisRun += 1;
       }
 
       lastTapTimestampRef.current =
@@ -935,8 +847,7 @@ export function useGameLoop({
 
       if (
         currentState !==
-        GAME_CONFIG.STATE
-          .PLAYING
+        GAME_CONFIG.STATE.PLAYING
       ) {
         return;
       }
@@ -951,100 +862,90 @@ export function useGameLoop({
   // POWER ACTIVATION
   // =========================
 
-  const activatePower = (
-    powerType
-  ) => {
-    activePowerRef.current =
-      powerType;
+  const activatePower =
+    (powerType) => {
+      activePowerRef.current =
+        powerType;
 
-    powerTimerRef.current =
-      GAME_CONFIG
-        .POWER_DURATION[
+      powerTimerRef.current =
+        GAME_CONFIG
+          .POWER_DURATION[
+          powerType
+        ] || 300;
+
+      setActivePower(
         powerType
-      ] || 300;
-
-    setActivePower(
-      powerType
-    );
-
-    setPowerTimer(
-      powerTimerRef.current
-    );
-
-    if (
-      powerType ===
-      POWER_TYPES.SHIELD
-    ) {
-      hasShieldRef.current =
-        true;
-
-      setHasShield(
-        true
       );
 
-      runStatsRef.current
-        .shieldsPickedUp +=
-        1;
-    }
-
-    if (
-      powerType ===
-      POWER_TYPES
-        .GRAVITY_FLIP
-    ) {
-      gravityFlippedRef.current =
-        true;
-
-      setGravityFlipped(
-        true
+      setPowerTimer(
+        powerTimerRef.current
       );
 
+      if (
+        powerType ===
+        POWER_TYPES.SHIELD
+      ) {
+        hasShieldRef.current =
+          true;
+
+        setHasShield(true);
+
+        runStatsRef.current
+          .shieldsPickedUp +=
+          1;
+      }
+
+      if (
+        powerType ===
+        POWER_TYPES.GRAVITY_FLIP
+      ) {
+        gravityFlippedRef.current =
+          true;
+
+        setGravityFlipped(
+          true
+        );
+
+        runStatsRef.current
+          .gravityUses +=
+          1;
+      }
+
+      if (
+        powerType ===
+        POWER_TYPES.SCORE_DOUBLER
+      ) {
+        runStatsRef.current
+          .doublerUses +=
+          1;
+      }
+
       runStatsRef.current
-        .gravityUses +=
-        1;
-    }
+        .powerupsUsed += 1;
 
-    if (
-      powerType ===
-      POWER_TYPES
-        .SCORE_DOUBLER
-    ) {
       runStatsRef.current
-        .doublerUses +=
-        1;
-    }
+        .orbsCollected += 1;
 
-    runStatsRef.current
-      .powerupsUsed +=
-      1;
+      const name =
+        generatePowerName();
 
-    runStatsRef.current
-      .orbsCollected +=
-      1;
+      setPowerName(name);
 
-    const name =
-      generatePowerName();
+      playSFX(
+        'powerup'
+      );
 
-    setPowerName(
-      name
-    );
+      haptic(
+        Haptics.ImpactFeedbackStyle
+          .Heavy
+      );
 
-    playSFX(
-      'powerup'
-    );
-
-    haptic(
-      Haptics
-        .ImpactFeedbackStyle
-        .Heavy
-    );
-
-    speakQuip(
-      getRandomQuip(
-        'POWER_UP'
-      )
-    );
-  };
+      speakQuip(
+        getRandomQuip(
+          'POWER_UP'
+        )
+      );
+    };
 
   // =========================
   // MAIN GAME LOOP
@@ -1053,8 +954,7 @@ export function useGameLoop({
   useEffect(() => {
     if (
       gameState !==
-      GAME_CONFIG.STATE
-        .PLAYING
+      GAME_CONFIG.STATE.PLAYING
     ) {
       return undefined;
     }
@@ -1074,9 +974,32 @@ export function useGameLoop({
         const now =
           Date.now();
 
+        const previousTime =
+          lastFrameTimeRef.current ||
+          now;
+
+        /*
+         * Clamp delta time so a short app pause,
+         * frame drop or slow device cannot launch
+         * the player through the world.
+         */
+        const dt =
+          Math.min(
+            0.032,
+            Math.max(
+              0.001,
+              (
+                now -
+                previousTime
+              ) / 1000
+            )
+          );
+
+        lastFrameTimeRef.current =
+          now;
+
         runStatsRef.current
-          .surviveFrames +=
-          1;
+          .surviveFrames += 1;
 
         // =====================
         // SPEED
@@ -1093,8 +1016,7 @@ export function useGameLoop({
 
         currentSpeedRef.current =
           Math.min(
-            GAME_CONFIG
-              .MAX_SPEED +
+            GAME_CONFIG.MAX_SPEED +
               (
                 activePowerRef.current ===
                 POWER_TYPES.SPEED
@@ -1103,9 +1025,7 @@ export function useGameLoop({
                   : 0
               ),
 
-            GAME_CONFIG
-              .BASE_SPEED +
-
+            GAME_CONFIG.BASE_SPEED +
               coinsRef.current *
                 GAME_CONFIG
                   .COIN_SPEED_BONUS +
@@ -1174,8 +1094,7 @@ export function useGameLoop({
           ) {
             if (
               activePowerRef.current ===
-              POWER_TYPES
-                .GRAVITY_FLIP
+              POWER_TYPES.GRAVITY_FLIP
             ) {
               gravityFlippedRef.current =
                 false;
@@ -1212,9 +1131,7 @@ export function useGameLoop({
             comboRef.current =
               0;
 
-            setCombo(
-              0
-            );
+            setCombo(0);
           }
         }
 
@@ -1222,156 +1139,157 @@ export function useGameLoop({
         // PLAYER PHYSICS
         // =====================
 
-        /*
-         * Capture the exact previous frame position before
-         * applying the jump/gravity step.
-         */
         const previousFrameY =
           playerYRef.current;
 
-        /*
-         * Consume queued touch input before gravity.
-         */
-        const jumpRequest =
-          jumpRequestedRef.current;
-
-        if (
-          jumpRequest
-        ) {
-          jumpRequestedRef.current =
-            null;
-
-          if (
-            jumpRequest.type ===
-            'POWER'
-          ) {
-            const sign =
-              gravityFlippedRef.current
-                ? -1
-                : 1;
-
-            playerVelocityYRef.current =
-              GAME_CONFIG
-                .POWER_JUMP_FORCE *
-              sign;
-
-            isGroundedRef.current =
-              false;
-
-            jumpCountRef.current =
-              maxJumpsRef.current +
-              1;
-
-            lastPowerJumpTimestampRef.current =
-              jumpRequest.timestamp;
-
-            powerJumpFlashRef.current =
-              1.0;
-
-            setPowerJumpFlash(
-              1.0
-            );
-
-            haptic(
-              Haptics
-                .ImpactFeedbackStyle
-                .Heavy
-            );
-
-            playSFX(
-              'power_jump'
-            );
-
-            runStatsRef.current
-              .jumpsThisRun +=
-              1;
-          } else {
-            const sign =
-              gravityFlippedRef.current
-                ? -1
-                : 1;
-
-            const jumpForce =
-              activePowerRef.current ===
-              POWER_TYPES.FLOAT
-                ? GAME_CONFIG
-                    .JUMP_FORCE *
-                  GAME_CONFIG
-                    .FLOAT_JUMP_MULT
-                : GAME_CONFIG
-                    .JUMP_FORCE;
-
-            playerVelocityYRef.current =
-              jumpForce *
-              sign;
-
-            isGroundedRef.current =
-              false;
-
-            jumpCountRef.current +=
-              1;
-
-            haptic(
-              Haptics
-                .ImpactFeedbackStyle
-                .Light
-            );
-
-            playSFX(
-              'jump'
-            );
-
-            runStatsRef.current
-              .jumpsThisRun +=
-              1;
-          }
-        }
-
         const pX =
-          GAME_CONFIG
-            .PLAYER_START_X;
+          GAME_CONFIG.PLAYER_START_X;
 
         const pW =
-          GAME_CONFIG
-            .PLAYER_WIDTH;
+          GAME_CONFIG.PLAYER_WIDTH;
 
         const pH =
-          GAME_CONFIG
-            .PLAYER_HEIGHT;
+          GAME_CONFIG.PLAYER_HEIGHT;
 
         /*
-         * Ground support check.
+         * Move platforms before checking
+         * grounded support.
+         *
+         * The multiplier converts the game's
+         * existing speed units into the elapsed
+         * time represented by dt.
+         */
+        let updatedPlatforms =
+          platformsRef.current.map(
+            (platform) => ({
+              ...platform,
+
+              x:
+                platform.x -
+                currentSpeedRef.current *
+                  (dt * 60),
+            })
+          );
+
+        if (
+          updatedPlatforms.length >
+            0 &&
+          updatedPlatforms[0].x +
+            updatedPlatforms[0]
+              .width <
+            -100
+        ) {
+          updatedPlatforms.shift();
+        }
+
+        const lastPlatform =
+          updatedPlatforms[
+            updatedPlatforms.length -
+              1
+          ];
+
+        if (
+          lastPlatform &&
+          lastPlatform.x +
+            lastPlatform.width <
+            GAME_CONFIG
+              .VIRTUAL_WIDTH +
+              200
+        ) {
+          const gap =
+            GAME_CONFIG
+              .STANDARD_GAP +
+            Math.random() *
+              (
+                GAME_CONFIG.MAX_GAP -
+                GAME_CONFIG.STANDARD_GAP
+              );
+
+          const newWidth =
+            GAME_CONFIG
+              .MIN_PLATFORM_WIDTH +
+            Math.random() *
+              (
+                GAME_CONFIG
+                  .MAX_PLATFORM_WIDTH -
+                GAME_CONFIG
+                  .MIN_PLATFORM_WIDTH
+              );
+
+          const newPlat = {
+            id:
+              Date.now() +
+              Math.random(),
+
+            x:
+              lastPlatform.x +
+              lastPlatform.width +
+              gap,
+
+            y:
+              GAME_CONFIG.GROUND_Y,
+
+            width:
+              newWidth,
+
+            height:
+              GAME_CONFIG.PLATFORM_HEIGHT,
+          };
+
+          updatedPlatforms.push(
+            newPlat
+          );
+
+          const newItems =
+            spawnItemsForPlatform(
+              newPlat
+            );
+
+          itemsRef.current = [
+            ...itemsRef.current,
+            ...newItems,
+          ];
+        }
+
+        platformsRef.current =
+          updatedPlatforms;
+
+        /*
+         * GROUNDED:
+         *
+         * Do not apply gravity.
+         *
+         * Instead, keep the player exactly on
+         * the platform surface.
          */
         if (
           isGroundedRef.current
         ) {
-          const bottom =
-            playerYRef.current +
-            pH;
-
-          const supported =
-            platformsRef.current.some(
-              (plat) => {
+          const support =
+            updatedPlatforms.find(
+              (platform) => {
                 const horizontalOverlap =
                   pX + pW >
-                    plat.x &&
+                    platform.x &&
                   pX <
-                    plat.x +
-                      plat.width;
+                    platform.x +
+                      platform.width;
 
                 return (
                   horizontalOverlap &&
                   Math.abs(
-                    bottom -
-                      plat.y
-                  ) <= 3
+                    playerYRef.current +
+                      pH -
+                      platform.y
+                  ) <= 8
                 );
               }
             );
 
-          if (
-            supported
-          ) {
+          if (support) {
+            playerYRef.current =
+              support.y - pH;
+
             playerVelocityYRef.current =
               0;
           } else {
@@ -1381,7 +1299,13 @@ export function useGameLoop({
         }
 
         /*
-         * Gravity is applied ONLY while airborne.
+         * AIRBORNE:
+         *
+         * Velocity and position are updated using
+         * elapsed seconds.
+         *
+         * Negative velocity = up.
+         * Positive velocity = down.
          */
         if (
           !isGroundedRef.current
@@ -1414,6 +1338,9 @@ export function useGameLoop({
                 .FALL_GRAVITY_MULTIPLIER;
           }
 
+          playerVelocityYRef.current +=
+            appliedGravity * dt;
+
           playerVelocityYRef.current =
             Math.max(
               -GAME_CONFIG
@@ -1423,13 +1350,136 @@ export function useGameLoop({
                 GAME_CONFIG
                   .MAX_FALL_SPEED,
 
-                playerVelocityYRef.current +
-                  appliedGravity
+                playerVelocityYRef.current
               )
             );
 
           playerYRef.current +=
-            playerVelocityYRef.current;
+            playerVelocityYRef.current *
+            dt;
+        }
+
+        /*
+         * SWEPT LANDING:
+         *
+         * Detect the exact frame where the player
+         * crosses a platform surface.
+         *
+         * This prevents repeated snap/correct/snap
+         * cycles that caused the vibration.
+         */
+        const currentBottom =
+          playerYRef.current +
+          pH;
+
+        const previousBottom =
+          previousFrameY +
+          pH;
+
+        let landed =
+          isGroundedRef.current;
+
+        if (
+          !isGroundedRef.current
+        ) {
+          for (
+            const platform of
+              updatedPlatforms
+          ) {
+            const horizontalOverlap =
+              pX + pW >
+                platform.x &&
+              pX <
+                platform.x +
+                  platform.width;
+
+            if (
+              !horizontalOverlap
+            ) {
+              continue;
+            }
+
+            if (
+              !gravityFlippedRef.current
+            ) {
+              const crossedSurface =
+                previousBottom <=
+                  platform.y &&
+                currentBottom >=
+                  platform.y;
+
+              const falling =
+                playerVelocityYRef.current >=
+                0;
+
+              if (
+                crossedSurface &&
+                falling
+              ) {
+                playerYRef.current =
+                  platform.y -
+                  pH;
+
+                playerVelocityYRef.current =
+                  0;
+
+                isGroundedRef.current =
+                  true;
+
+                jumpCountRef.current =
+                  0;
+
+                landed = true;
+
+                break;
+              }
+            } else {
+              const previousTop =
+                previousFrameY;
+
+              const currentTop =
+                playerYRef.current;
+
+              const crossedUnderside =
+                previousTop >=
+                  platform.y +
+                    platform.height &&
+                currentTop <=
+                  platform.y +
+                    platform.height;
+
+              const rising =
+                playerVelocityYRef.current <=
+                0;
+
+              if (
+                crossedUnderside &&
+                rising
+              ) {
+                playerYRef.current =
+                  platform.y +
+                  platform.height;
+
+                playerVelocityYRef.current =
+                  0;
+
+                isGroundedRef.current =
+                  true;
+
+                jumpCountRef.current =
+                  0;
+
+                landed = true;
+
+                break;
+              }
+            }
+          }
+        }
+
+        if (!landed) {
+          isGroundedRef.current =
+            false;
         }
 
         // =====================
@@ -1490,255 +1540,27 @@ export function useGameLoop({
         }
 
         // =====================
-        // SCROLL PLATFORMS
-        // =====================
-
-        let updatedPlatforms =
-          platformsRef.current.map(
-            (p) => ({
-              ...p,
-
-              x:
-                p.x -
-                currentSpeedRef.current,
-            })
-          );
-
-        if (
-          updatedPlatforms.length >
-            0 &&
-          updatedPlatforms[0].x +
-            updatedPlatforms[0]
-              .width <
-            -100
-        ) {
-          updatedPlatforms.shift();
-        }
-
-        const lastPlatform =
-          updatedPlatforms[
-            updatedPlatforms.length -
-              1
-          ];
-
-        if (
-          lastPlatform &&
-          lastPlatform.x +
-            lastPlatform.width <
-            GAME_CONFIG
-              .VIRTUAL_WIDTH +
-              200
-        ) {
-          const gap =
-            GAME_CONFIG
-              .STANDARD_GAP +
-            Math.random() *
-              (
-                GAME_CONFIG
-                  .MAX_GAP -
-                GAME_CONFIG
-                  .STANDARD_GAP
-              );
-
-          const newWidth =
-            GAME_CONFIG
-              .MIN_PLATFORM_WIDTH +
-            Math.random() *
-              (
-                GAME_CONFIG
-                  .MAX_PLATFORM_WIDTH -
-                GAME_CONFIG
-                  .MIN_PLATFORM_WIDTH
-              );
-
-          const newPlat = {
-            id:
-              Date.now() +
-              Math.random(),
-
-            x:
-              lastPlatform.x +
-              lastPlatform.width +
-              gap,
-
-            y:
-              GAME_CONFIG
-                .GROUND_Y,
-
-            width:
-              newWidth,
-
-            height:
-              GAME_CONFIG
-                .PLATFORM_HEIGHT,
-          };
-
-          updatedPlatforms.push(
-            newPlat
-          );
-
-          const newItems =
-            spawnItemsForPlatform(
-              newPlat
-            );
-
-          itemsRef.current = [
-            ...itemsRef.current,
-            ...newItems,
-          ];
-        }
-
-        platformsRef.current =
-          updatedPlatforms;
-
-        // =====================
         // SCROLL ITEMS
         // =====================
 
         const updatedItems =
           itemsRef.current
             .map(
-              (it) => ({
-                ...it,
+              (item) => ({
+                ...item,
 
                 x:
-                  it.x -
-                  currentSpeedRef.current,
+                  item.x -
+                  currentSpeedRef.current *
+                    (dt * 60),
               })
             )
             .filter(
-              (it) =>
-                it.x +
-                  it.width >
+              (item) =>
+                item.x +
+                  item.width >
                 -50
             );
-
-        // =====================
-        // LANDING COLLISION
-        // =====================
-
-        const currentBottom =
-          playerYRef.current +
-          pH;
-
-        /*
-         * Exact previous-frame position.
-         */
-        const previousY =
-          previousFrameY;
-
-        const previousBottom =
-          previousY + pH;
-
-        let landed =
-          isGroundedRef.current;
-
-        if (
-          !isGroundedRef.current
-        ) {
-          for (
-            let i = 0;
-            i <
-              updatedPlatforms.length;
-            i++
-          ) {
-            const plat =
-              updatedPlatforms[i];
-
-            const horizontalOverlap =
-              pX + pW >
-                plat.x &&
-              pX <
-                plat.x +
-                  plat.width;
-
-            if (
-              !gravityFlippedRef.current
-            ) {
-              const crossedSurface =
-                previousBottom <=
-                  plat.y + 2 &&
-                currentBottom >=
-                  plat.y;
-
-              const falling =
-                playerVelocityYRef.current >=
-                0;
-
-              if (
-                horizontalOverlap &&
-                crossedSurface &&
-                falling
-              ) {
-                playerYRef.current =
-                  plat.y -
-                  pH;
-
-                playerVelocityYRef.current =
-                  0;
-
-                isGroundedRef.current =
-                  true;
-
-                jumpCountRef.current =
-                  0;
-
-                landed =
-                  true;
-
-                break;
-              }
-            } else {
-              const playerTop =
-                playerYRef.current;
-
-              const previousTop =
-                previousY;
-
-              const crossedUnderside =
-                previousTop >=
-                  plat.y +
-                    plat.height -
-                    2 &&
-                playerTop <=
-                  plat.y +
-                    plat.height;
-
-              const rising =
-                playerVelocityYRef.current <=
-                0;
-
-              if (
-                horizontalOverlap &&
-                crossedUnderside &&
-                rising
-              ) {
-                playerYRef.current =
-                  plat.y +
-                  plat.height;
-
-                playerVelocityYRef.current =
-                  0;
-
-                isGroundedRef.current =
-                  true;
-
-                jumpCountRef.current =
-                  0;
-
-                landed =
-                  true;
-
-                break;
-              }
-            }
-          }
-        }
-
-        if (!landed) {
-          isGroundedRef.current =
-            false;
-        }
 
         // =====================
         // ITEM COLLISIONS
@@ -1752,8 +1574,7 @@ export function useGameLoop({
 
         for (
           let i = 0;
-          i <
-            updatedItems.length;
+          i < updatedItems.length;
           i++
         ) {
           const item =
@@ -1771,17 +1592,16 @@ export function useGameLoop({
               item.y +
                 item.height;
 
-          if (
-            collides
-          ) {
+          if (collides) {
+            // COIN
+
             if (
               item.type ===
               ITEM_TYPES.COIN
             ) {
               const mult =
                 activePowerRef.current ===
-                POWER_TYPES
-                  .SCORE_DOUBLER
+                POWER_TYPES.SCORE_DOUBLER
                   ? 2
                   : 1;
 
@@ -1868,10 +1688,11 @@ export function useGameLoop({
               continue;
             }
 
+            // POWER ORB
+
             if (
               item.type ===
-              ITEM_TYPES
-                .POWER_ORB
+              ITEM_TYPES.POWER_ORB
             ) {
               activatePower(
                 item.powerType
@@ -1901,10 +1722,11 @@ export function useGameLoop({
               continue;
             }
 
+            // BOOST PAD
+
             if (
               item.type ===
-              ITEM_TYPES
-                .BOOST_PAD
+              ITEM_TYPES.BOOST_PAD
             ) {
               const sign =
                 gravityFlippedRef.current
@@ -1916,9 +1738,6 @@ export function useGameLoop({
                   .JUMP_FORCE *
                 1.1 *
                 sign;
-
-              isGroundedRef.current =
-                false;
 
               currentSpeedRef.current =
                 Math.min(
@@ -1942,6 +1761,8 @@ export function useGameLoop({
 
               continue;
             }
+
+            // SPIKE
 
             if (
               item.type ===
@@ -2005,7 +1826,6 @@ export function useGameLoop({
                     0
                   ) {
                     triggerGameOver();
-
                     return;
                   }
                 }
@@ -2054,8 +1874,7 @@ export function useGameLoop({
         const scoreMult =
           (
             activePowerRef.current ===
-            POWER_TYPES
-              .SCORE_DOUBLER
+            POWER_TYPES.SCORE_DOUBLER
               ? 2
               : 1
           ) *
@@ -2092,9 +1911,7 @@ export function useGameLoop({
         // SYNC REACT STATE
         // =====================
 
-        setPlayerX(
-          pX
-        );
+        setPlayerX(pX);
 
         setPlayerY(
           playerYRef.current
@@ -2104,10 +1921,15 @@ export function useGameLoop({
           isGroundedRef.current
         );
 
+        /*
+         * 3 RAF frames per animation frame
+         * gives the current bundled spritesheet
+         * a stable animation speed.
+         */
         setAnimFrame(
           Math.floor(
             frameTickRef.current /
-              4
+              3
           )
         );
 
@@ -2124,7 +1946,7 @@ export function useGameLoop({
         );
 
         // =====================
-        // FALL / WATER DEATH
+        // FALL DEATH
         // =====================
 
         if (
@@ -2138,12 +1960,11 @@ export function useGameLoop({
           playerYRef.current <
             -100 ||
           playerYRef.current +
-              pH >=
+            pH >=
             GAME_CONFIG
               .FALL_DEATH_Y
         ) {
           triggerGameOver();
-
           return;
         }
 
@@ -2161,9 +1982,7 @@ export function useGameLoop({
     return () => {
       cancelled = true;
 
-      if (
-        rafIdRef.current
-      ) {
+      if (rafIdRef.current) {
         cancelAnimationFrame(
           rafIdRef.current
         );
@@ -2182,8 +2001,7 @@ export function useGameLoop({
   useEffect(() => {
     if (
       gameState !==
-      GAME_CONFIG.STATE
-        .GAMEOVER
+      GAME_CONFIG.STATE.GAMEOVER
     ) {
       return undefined;
     }
@@ -2191,43 +2009,36 @@ export function useGameLoop({
     deathFadeRef.current =
       0;
 
-    setDeathFadeAlpha(
-      0
-    );
+    setDeathFadeAlpha(0);
 
     const interval =
-      setInterval(
-        () => {
-          deathFadeRef.current =
-            Math.min(
-              1,
-              deathFadeRef.current +
-                0.05
-            );
-
-          setDeathFadeAlpha(
-            deathFadeRef.current
+      setInterval(() => {
+        deathFadeRef.current =
+          Math.min(
+            1,
+            deathFadeRef.current +
+              0.05
           );
 
-          if (
-            deathFadeRef.current >=
-            1
-          ) {
-            clearInterval(
-              interval
-            );
-          }
-        },
-        30
-      );
+        setDeathFadeAlpha(
+          deathFadeRef.current
+        );
+
+        if (
+          deathFadeRef.current >=
+          1
+        ) {
+          clearInterval(
+            interval
+          );
+        }
+      }, 30);
 
     return () =>
       clearInterval(
         interval
       );
-  }, [
-    gameState,
-  ]);
+  }, [gameState]);
 
   return {
     gameState,

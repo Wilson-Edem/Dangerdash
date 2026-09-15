@@ -24,9 +24,7 @@ export function ThemeProvider({
   const [
     themeKey,
     setThemeKey,
-  ] = useState(
-    'cyberpunk'
-  );
+  ] = useState('cyberpunk');
 
   const [
     isReady,
@@ -48,9 +46,7 @@ export function ThemeProvider({
           THEMES[saved] &&
           mounted
         ) {
-          setThemeKey(
-            saved
-          );
+          setThemeKey(saved);
         }
       } catch (e) {
         console.warn(
@@ -59,9 +55,7 @@ export function ThemeProvider({
         );
       } finally {
         if (mounted) {
-          setIsReady(
-            true
-          );
+          setIsReady(true);
         }
       }
     })();
@@ -72,18 +66,16 @@ export function ThemeProvider({
   }, []);
 
   /*
-   * Warm the native asset cache in the background.
+   * Preload every theme after startup.
    *
-   * This means theme changes don't wait until the exact
-   * moment the user switches theme to load/decode:
-   *
+   * This covers:
+   * - backgrounds
    * - platforms
    * - spikes
-   * - shields
    * - coins
    * - boost pads
+   * - shields
    * - player sprites
-   * - backgrounds
    * - water
    */
   useEffect(() => {
@@ -94,14 +86,12 @@ export function ThemeProvider({
     const timer =
       setTimeout(() => {
         const modules =
-          Object.values(
-            THEMES
-          ).flatMap(
-            (item) =>
+          Object.values(THEMES)
+            .flatMap((item) =>
               Object.values(
                 item.assets || {}
               )
-          );
+            );
 
         Asset.loadAsync(
           modules
@@ -117,6 +107,27 @@ export function ThemeProvider({
       async (key) => {
         if (!THEMES[key]) {
           return;
+        }
+
+        /*
+         * IMPORTANT:
+         *
+         * Load the target theme before changing
+         * themeKey. This prevents the game from
+         * switching the colors/background first
+         * while the world sprites are still loading.
+         */
+        try {
+          await Asset.loadAsync(
+            Object.values(
+              THEMES[key].assets || {}
+            )
+          );
+        } catch (e) {
+          console.warn(
+            'Theme asset preload failed:',
+            e
+          );
         }
 
         setThemeKey(key);

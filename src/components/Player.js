@@ -25,15 +25,20 @@ export default function Player({
   gravityFlipped,
   skinColors,
 }) {
-  const { theme } = useTheme();
+  const {
+    theme,
+    themeKey,
+  } = useTheme();
 
-  const spriteImage = useImage(
-    theme.assets.playerSprite
-  );
+  const spriteImage =
+    useImage(
+      theme.assets.playerSprite
+    );
 
-  const shieldAuraImage = useImage(
-    theme.assets.shieldAura
-  );
+  const shieldAuraImage =
+    useImage(
+      theme.assets.shieldAura
+    );
 
   const imgWidth =
     spriteImage?.width() || 0;
@@ -51,36 +56,85 @@ export default function Player({
       ? imgHeight
       : GAME_CONFIG.PLAYER_HEIGHT;
 
+  /*
+   * Current bundled spritesheet contains 4 frames.
+   *
+   * Running:
+   *   0 → 1 → 2 → 3
+   *
+   * Airborne:
+   *   0 → 1 → 2 → 3
+   *
+   * This is only the temporary fallback.
+   *
+   * Once the 5 running images and 5 jumping
+   * images are uploaded, this selector will be
+   * replaced with the actual 10-frame animation.
+   */
   const currentFrame =
     isGrounded
       ? animFrame % 4
-      : 1;
+      : Math.min(
+          3,
+          Math.floor(
+            animFrame / 3
+          ) % 4
+        );
+
+  const skinColor =
+    (skinColors &&
+      skinColors[0]) ||
+    theme.colors.hudBorder;
 
   const auraColor =
     (activePower &&
       PALETTE.POWER_COLORS[
         activePower
       ]) ||
-    (skinColors &&
-      skinColors[0]) ||
+    skinColor ||
     theme.colors.comboText;
 
   const offsetY =
-    GAME_CONFIG.SPRITE_OFFSET_Y || 0;
+    GAME_CONFIG.SPRITE_OFFSET_Y ||
+    0;
 
   const renderY =
     playerY + offsetY;
 
   const centerX =
     playerX +
-    GAME_CONFIG.PLAYER_WIDTH / 2;
+    GAME_CONFIG.PLAYER_WIDTH /
+      2;
 
   const centerY =
     renderY +
-    GAME_CONFIG.PLAYER_HEIGHT / 2;
+    GAME_CONFIG.PLAYER_HEIGHT /
+      2;
 
   return (
-    <Group>
+    <Group
+      key={`player-theme-${themeKey}`}
+    >
+      {/* =========================
+          EQUIPPED SKIN ACCENT
+      ========================== */}
+
+      <Circle
+        cx={centerX}
+        cy={centerY}
+        r={
+          GAME_CONFIG.PLAYER_HEIGHT *
+          0.58
+        }
+        color={skinColor}
+        opacity={0.18}
+      >
+        <BlurMask
+          blur={10}
+          style="solid"
+        />
+      </Circle>
+
       {/* =========================
           POWER AURA
       ========================== */}
@@ -137,11 +191,13 @@ export default function Player({
       {spriteImage && (
         <Image
           image={spriteImage}
-          x={Math.round(playerX)}
+          x={Math.round(
+            playerX
+          )}
           y={Math.round(
             gravityFlipped
               ? renderY +
-                  GAME_CONFIG.PLAYER_HEIGHT
+                GAME_CONFIG.PLAYER_HEIGHT
               : renderY
           )}
           width={
@@ -152,23 +208,16 @@ export default function Player({
               ? -GAME_CONFIG.PLAYER_HEIGHT
               : GAME_CONFIG.PLAYER_HEIGHT
           }
-
-          /*
-           * contain prevents the sprite from
-           * being stretched unnaturally.
-           */
           fit="contain"
-
           rect={{
             x:
               currentFrame *
               frameWidth,
-
             y: 0,
-
-            width: frameWidth,
-
-            height: frameHeight,
+            width:
+              frameWidth,
+            height:
+              frameHeight,
           }}
         />
       )}
@@ -180,12 +229,18 @@ export default function Player({
       {hasShield &&
         shieldAuraImage && (
           <Image
-            image={shieldAuraImage}
+            image={
+              shieldAuraImage
+            }
             x={
-              Math.round(playerX) - 18
+              Math.round(
+                playerX
+              ) - 18
             }
             y={
-              Math.round(renderY) - 16
+              Math.round(
+                renderY
+              ) - 16
             }
             width={
               GAME_CONFIG.PLAYER_WIDTH +

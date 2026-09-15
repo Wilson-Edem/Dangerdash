@@ -19,24 +19,23 @@
         "backgroundColor": "#030108"
       },
       "permissions": [
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "android.permission.WAKE_LOCK"
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "plugins": [
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": false,
+          "recordAudioAndroid": false,
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-notifications",
         {
           "color": "#FF1744",
           "defaultChannel": "daily-challenges"
-        }
-      ],
-      [
-        "expo-audio",
-        {
-          "enableBackgroundPlayback": true
         }
       ],
       "expo-asset",

@@ -1,4 +1,7 @@
-import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+} from 'expo-audio';
 
 const SOUND_ASSETS = {
   menu_theme: require('../../assets/audio/music/menu_theme.mp3'),
@@ -17,151 +20,294 @@ const SOUND_ASSETS = {
   game_over: require('../../assets/audio/sfx/game_over.wav'),
 };
 
-const MUSIC_TRACKS = ['menu_theme', 'gameplay_track_1', 'gameplay_track_2'];
+const MUSIC_TRACKS = [
+  'menu_theme',
+  'gameplay_track_1',
+  'gameplay_track_2',
+];
 
 const sfxPlayers = {};
+
 let musicPlayer = null;
 let currentMusicKey = null;
 let isPreloaded = false;
 
-// Runtime flags — set by OptionsScreen via setAudioFlags()
-let flags = { musicOn: true, soundOn: true };
+let flags = {
+  musicOn: true,
+  soundOn: true,
+};
 
 export function setAudioFlags(next) {
-  flags = { ...flags, ...next };
+  flags = {
+    ...flags,
+    ...next,
+  };
+
   if (!flags.musicOn && musicPlayer) {
-    try { musicPlayer.pause(); } catch (e) {}
-  } else if (flags.musicOn && musicPlayer && currentMusicKey) {
-    try { musicPlayer.play(); } catch (e) {}
+    try {
+      musicPlayer.pause();
+    } catch (e) {}
+  } else if (
+    flags.musicOn &&
+    musicPlayer &&
+    currentMusicKey
+  ) {
+    try {
+      musicPlayer.play();
+    } catch (e) {}
   }
 }
 
 export async function initAudioSession() {
   try {
+    
     await setAudioModeAsync({
       playsInSilentMode: true,
-      shouldPlayInBackground: true,   // FIX: was false
+      shouldPlayInBackground: false,
       interruptionMode: 'doNotMix',
     });
   } catch (e) {
-    console.warn('Audio session init failed:', e);
+    console.warn(
+      'Audio session init failed:',
+      e
+    );
   }
 }
 
 export async function preloadAllAudio() {
-  if (isPreloaded) return;
+  if (isPreloaded) {
+    return;
+  }
+
   isPreloaded = true;
 
-  for (const key of Object.keys(SOUND_ASSETS)) {
-    if (MUSIC_TRACKS.includes(key)) continue;
+  for (
+    const key of Object.keys(SOUND_ASSETS)
+  ) {
+    if (MUSIC_TRACKS.includes(key)) {
+      continue;
+    }
+
     try {
-      const player = createAudioPlayer(SOUND_ASSETS[key]);
+      const player =
+        createAudioPlayer(
+          SOUND_ASSETS[key]
+        );
+
       player.volume = 0.8;
-      sfxPlayers[key] = player;
+
+      sfxPlayers[key] =
+        player;
     } catch (e) {
-      console.warn(`SFX preload failed (${key}):`, e);
+      console.warn(
+        `SFX preload failed (${key}):`,
+        e
+      );
     }
   }
 }
 
 export function playSFX(key) {
-  if (!flags.soundOn) return;
-  const player = sfxPlayers[key];
-  if (!player) return;
+  if (!flags.soundOn) {
+    return;
+  }
+
+  const player =
+    sfxPlayers[key];
+
+  if (!player) {
+    return;
+  }
+
   try {
     player.seekTo(0);
     player.play();
   } catch (e) {}
 }
 
-export async function playMusic(key, fadeMs = 800) {
-  if (!flags.musicOn) return;
-  if (currentMusicKey === key && musicPlayer) return;
+export async function playMusic(
+  key,
+  fadeMs = 800
+) {
+  if (!flags.musicOn) {
+    return;
+  }
+
+  if (
+    currentMusicKey === key &&
+    musicPlayer
+  ) {
+    return;
+  }
 
   if (musicPlayer) {
-    const old = musicPlayer;
+    const old =
+      musicPlayer;
+
     musicPlayer = null;
     currentMusicKey = null;
-    fadeVolume(old, old.volume || 0, 0, fadeMs / 2, () => {
-      try {
-        old.pause();
-        old.remove();
-      } catch (e) {}
-    });
+
+    fadeVolume(
+      old,
+      old.volume || 0,
+      0,
+      fadeMs / 2,
+      () => {
+        try {
+          old.pause();
+          old.remove();
+        } catch (e) {}
+      }
+    );
   }
 
-  const asset = SOUND_ASSETS[key];
-  if (!asset) return;
+  const asset =
+    SOUND_ASSETS[key];
+
+  if (!asset) {
+    return;
+  }
 
   try {
-    const player = createAudioPlayer(asset);
+    const player =
+      createAudioPlayer(
+        asset
+      );
+
     player.loop = true;
     player.volume = 0;
+
     player.play();
 
-    // Lock-screen metadata — required on Android for sustained background play
-    if (typeof player.setActiveForLockScreen === 'function') {
-      try {
-        player.setActiveForLockScreen(true, {
-          title: 'Danger Dash',
-          artist: 'Vhite',
-        });
-      } catch (e) {}
-    }
-
+    /*
+     * No setActiveForLockScreen().
+     *
+     * DangerDash does not need background media playback.
+     */
     musicPlayer = player;
     currentMusicKey = key;
-    fadeVolume(player, 0, 0.5, fadeMs);
+
+    fadeVolume(
+      player,
+      0,
+      0.5,
+      fadeMs
+    );
   } catch (e) {
-    console.warn(`Music playback failed (${key}):`, e);
+    console.warn(
+      `Music playback failed (${key}):`,
+      e
+    );
   }
 }
 
-export function stopMusic(fadeMs = 600) {
-  if (!musicPlayer) return;
-  const p = musicPlayer;
+export function stopMusic(
+  fadeMs = 600
+) {
+  if (!musicPlayer) {
+    return;
+  }
+
+  const player =
+    musicPlayer;
+
   musicPlayer = null;
   currentMusicKey = null;
-  fadeVolume(p, p.volume || 0.5, 0, fadeMs, () => {
-    try {
-      p.pause();
-      p.remove();
-    } catch (e) {}
-  });
+
+  fadeVolume(
+    player,
+    player.volume || 0.5,
+    0,
+    fadeMs,
+    () => {
+      try {
+        player.pause();
+        player.remove();
+      } catch (e) {}
+    }
+  );
 }
 
-export function setMusicSpeedSync(currentSpeed) {
-  if (!musicPlayer) return;
+export function setMusicSpeedSync(
+  currentSpeed
+) {
+  if (!musicPlayer) {
+    return;
+  }
+
   try {
-    const ratio = Math.min(currentSpeed / 14.0, 1);
-    const rate = 1 + ratio * 0.15;   // 1.0 → 1.15
-    if (typeof musicPlayer.setPlaybackRate === 'function') {
-      musicPlayer.setPlaybackRate(rate);
+    const ratio =
+      Math.min(
+        currentSpeed / 14.0,
+        1
+      );
+
+    const rate =
+      1 + ratio * 0.15;
+
+    if (
+      typeof musicPlayer.setPlaybackRate ===
+      'function'
+    ) {
+      musicPlayer.setPlaybackRate(
+        rate
+      );
     }
   } catch (e) {}
 }
 
-function fadeVolume(player, from, to, durationMs, onComplete) {
+function fadeVolume(
+  player,
+  from,
+  to,
+  durationMs,
+  onComplete
+) {
   if (durationMs <= 0) {
-    try { player.volume = to; } catch (e) {}
-    if (onComplete) onComplete();
+    try {
+      player.volume = to;
+    } catch (e) {}
+
+    if (onComplete) {
+      onComplete();
+    }
+
     return;
   }
+
   const steps = 20;
-  const stepDuration = durationMs / steps;
-  const delta = (to - from) / steps;
+
+  const stepDuration =
+    durationMs / steps;
+
+  const delta =
+    (to - from) / steps;
+
   let current = from;
   let step = 0;
 
-  const timer = setInterval(() => {
-    step++;
-    current += delta;
-    try {
-      player.volume = Math.max(0, Math.min(1, current));
-    } catch (e) {}
-    if (step >= steps) {
-      clearInterval(timer);
-      if (onComplete) onComplete();
-    }
-  }, stepDuration);
+  const timer =
+    setInterval(() => {
+      step += 1;
+      current += delta;
+
+      try {
+        player.volume =
+          Math.max(
+            0,
+            Math.min(
+              1,
+              current
+            )
+          );
+      } catch (e) {}
+
+      if (step >= steps) {
+        clearInterval(timer);
+
+        if (onComplete) {
+          onComplete();
+        }
+      }
+    }, stepDuration);
 }

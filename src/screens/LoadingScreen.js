@@ -351,7 +351,7 @@ export default function LoadingScreen({
                 },
               ]}
             >
-              DANGER DASH
+              DANGERDASH
             </Animated.Text>
 
             <Text

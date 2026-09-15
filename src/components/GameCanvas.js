@@ -22,6 +22,8 @@ import { PALETTE } from '../constants/palette';
 
 import { useTheme } from '../context/ThemeContext';
 
+import { THEMES } from '../constants/themes';
+
 import Player from './Player';
 import Platform from './Platform';
 import Items from './Items';
@@ -42,23 +44,77 @@ export default function GameCanvas({
   deathFadeAlpha,
   skinColors,
 }) {
-  const { theme } = useTheme();
+  const {
+    theme,
+    themeKey,
+  } = useTheme();
 
-  const bgSky = useImage(
-    theme.assets.bgSky
-  );
+  /*
+   * Keep both theme image sets loaded.
+   *
+   * This means changing themes does not depend on
+   * Skia decoding a brand-new image at the exact
+   * moment the user presses the theme button.
+   */
+  const cyberSky =
+    useImage(
+      THEMES.cyberpunk.assets.bgSky
+    );
 
-  const bgCityFar = useImage(
-    theme.assets.bgFar
-  );
+  const woodenSky =
+    useImage(
+      THEMES.wooden.assets.bgSky
+    );
 
-  const bgCityNear = useImage(
-    theme.assets.bgNear
-  );
+  const cyberFar =
+    useImage(
+      THEMES.cyberpunk.assets.bgFar
+    );
 
-  const waterTile = useImage(
-    theme.assets.waterTile
-  );
+  const woodenFar =
+    useImage(
+      THEMES.wooden.assets.bgFar
+    );
+
+  const cyberNear =
+    useImage(
+      THEMES.cyberpunk.assets.bgNear
+    );
+
+  const woodenNear =
+    useImage(
+      THEMES.wooden.assets.bgNear
+    );
+
+  const cyberWater =
+    useImage(
+      THEMES.cyberpunk.assets.waterTile
+    );
+
+  const woodenWater =
+    useImage(
+      THEMES.wooden.assets.waterTile
+    );
+
+  const bgSky =
+    themeKey === 'wooden'
+      ? woodenSky
+      : cyberSky;
+
+  const bgCityFar =
+    themeKey === 'wooden'
+      ? woodenFar
+      : cyberFar;
+
+  const bgCityNear =
+    themeKey === 'wooden'
+      ? woodenNear
+      : cyberNear;
+
+  const waterTile =
+    themeKey === 'wooden'
+      ? woodenWater
+      : cyberWater;
 
   const farOffset =
     (score * 0.55) %
@@ -87,8 +143,22 @@ export default function GameCanvas({
     ) * 2;
 
   return (
-    <View style={styles.container}>
-      <Canvas style={styles.canvas}>
+    <View
+      style={styles.container}
+    >
+      {/*
+       * The key is critical.
+       *
+       * When themeKey changes, the complete Skia
+       * rendering subtree is recreated. That means
+       * Platform, Items and Player also receive the
+       * new theme assets instead of retaining an
+       * old Skia image object.
+       */}
+      <Canvas
+        key={`canvas-theme-${themeKey}`}
+        style={styles.canvas}
+      >
         {/* =========================
             BACKGROUND GRADIENT
         ========================== */}
@@ -96,7 +166,9 @@ export default function GameCanvas({
         <Rect
           x={0}
           y={0}
-          width={GAME_CONFIG.VIRTUAL_WIDTH}
+          width={
+            GAME_CONFIG.VIRTUAL_WIDTH
+          }
           height={
             GAME_CONFIG.VIRTUAL_HEIGHT
           }
@@ -219,23 +291,27 @@ export default function GameCanvas({
               width={
                 GAME_CONFIG.VIRTUAL_WIDTH
               }
-              height={waterHeight}
+              height={
+                waterHeight
+              }
             >
               <ImageShader
                 image={waterTile}
                 fit="none"
                 rect={{
-                  x: -waterScrollX,
+                  x:
+                    -waterScrollX,
                   y: 0,
-                  width: WATER_TILE_W,
-                  height: waterHeight,
+                  width:
+                    WATER_TILE_W,
+                  height:
+                    waterHeight,
                 }}
                 tx="repeat"
                 ty="clamp"
               />
             </Rect>
 
-            {/* Surface highlight */}
             <Rect
               x={0}
               y={
@@ -261,7 +337,9 @@ export default function GameCanvas({
                 GAME_CONFIG.VIRTUAL_WIDTH
               }
               height={2}
-              color={PALETTE.NEON_CYAN}
+              color={
+                PALETTE.NEON_CYAN
+              }
               opacity={0.45}
             />
           </Group>
@@ -274,7 +352,9 @@ export default function GameCanvas({
             width={
               GAME_CONFIG.VIRTUAL_WIDTH
             }
-            height={waterHeight}
+            height={
+              waterHeight
+            }
             color={
               PALETTE.WATER_COLOR
             }
@@ -307,14 +387,24 @@ export default function GameCanvas({
           powerJumpFlash={
             powerJumpFlash
           }
-          isGrounded={isGrounded}
-          hasShield={hasShield}
-          animFrame={animFrame}
-          activePower={activePower}
+          isGrounded={
+            isGrounded
+          }
+          hasShield={
+            hasShield
+          }
+          animFrame={
+            animFrame
+          }
+          activePower={
+            activePower
+          }
           gravityFlipped={
             gravityFlipped
           }
-          skinColors={skinColors}
+          skinColors={
+            skinColors
+          }
         />
 
         {/* =========================
@@ -343,16 +433,18 @@ export default function GameCanvas({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width:
-      GAME_CONFIG.VIRTUAL_WIDTH,
-    height:
-      GAME_CONFIG.VIRTUAL_HEIGHT,
-    backgroundColor: '#030408',
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      width:
+        GAME_CONFIG.VIRTUAL_WIDTH,
+      height:
+        GAME_CONFIG.VIRTUAL_HEIGHT,
+      backgroundColor:
+        '#030408',
+    },
 
-  canvas: {
-    flex: 1,
-  },
-});
+    canvas: {
+      flex: 1,
+    },
+  });

@@ -13,11 +13,20 @@ export const GAME_CONFIG = {
   // PHYSICS
   // =========================
 
-  GRAVITY: 1.0,
+  /*
+   * Player physics use virtual pixels per second.
+   *
+   * The previous implementation treated gravity as
+   * "pixels per frame". That made movement dependent on
+   * the actual FPS of the device.
+   *
+   * These values are now time-based.
+   */
+  GRAVITY: 2100,
 
   FALL_GRAVITY_MULTIPLIER: 1.45,
 
-  MAX_FALL_SPEED: 17,
+  MAX_FALL_SPEED: 1200,
 
   BASE_SPEED: 6.0,
 
@@ -47,9 +56,12 @@ export const GAME_CONFIG = {
   // JUMP
   // =========================
 
-  JUMP_FORCE: -15.5,
+  /*
+   * Negative Y velocity means upward movement.
+   */
+  JUMP_FORCE: -720,
 
-  POWER_JUMP_FORCE: -25.0,
+  POWER_JUMP_FORCE: -980,
 
   MAX_MIDAIR_JUMPS: 1,
 
@@ -61,12 +73,6 @@ export const GAME_CONFIG = {
   // PLATFORMS
   // =========================
 
-  /*
-   * 225 / 450 = 50%.
-   *
-   * The platform surface is therefore exactly halfway
-   * down the virtual game canvas.
-   */
   GROUND_Y: 225,
 
   PLATFORM_HEIGHT: 180,
@@ -149,13 +155,14 @@ export const GAME_CONFIG = {
   // =========================
 
   /*
-   * Raised from 340 to 315 so the water is visibly higher
-   * and a falling player reaches it shortly after leaving
-   * a platform.
+   * Raised from 315.
    */
-  WATER_LEVEL_Y: 315,
+  WATER_LEVEL_Y: 300,
 
-  FALL_DEATH_Y: 365,
+  /*
+   * Absolute safety boundary below the canvas.
+   */
+  FALL_DEATH_Y: 430,
 
   MUSIC_BASE_VOLUME: 0.5,
 
