@@ -6,7 +6,7 @@ import {
 const SOUND_ASSETS = {
   menu_theme: require('../../assets/audio/music/menu_theme.mp3'),
   gameplay_track_1: require('../../assets/audio/music/gameplay_track_1.mp3'),
-  gameplay_track_2: require('../../assets/audio/music/gameplay_track_2.mp3'),
+  gameplay_track_2: require('../../assets/audio/music/gameplay_track_3.mp3'),
 
   ui_click: require('../../assets/audio/sfx/ui_click.wav'),
   jump: require('../../assets/audio/sfx/jump.wav'),
