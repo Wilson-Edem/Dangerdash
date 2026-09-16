@@ -23,7 +23,7 @@ export default function Items({ items }) {
   const shieldSprite = themeKey === 'wooden' ? woodenShield : cyberShield;
 
   return (
-    <Group key={`items-theme-${themeKey}`}>
+    <Group>
       {items.map((item) => {
         if (item.type === GAME_CONFIG.ITEM_TYPES.COIN) {
           return coinSprite ? (
@@ -50,7 +50,17 @@ export default function Items({ items }) {
           const r = item.width / 2;
 
           if (isShield && shieldSprite) {
-            return <Image key={`${themeKey}-${item.id}`} image={shieldSprite} x={item.x} y={item.y} width={item.width} height={item.height} fit="contain" />;
+            return (
+              <Image
+                key={`${themeKey}-${item.id}`}
+                image={shieldSprite}
+                x={item.x}
+                y={item.y}
+                width={item.width}
+                height={item.height}
+                fit="contain"
+              />
+            );
           }
 
           const color = PALETTE.POWER_COLORS[item.powerType] || theme.colors.hudBorder;

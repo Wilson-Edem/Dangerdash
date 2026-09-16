@@ -66,12 +66,31 @@ export default function GameCanvas({
 
   return (
     <View style={styles.container}>
-      <Canvas style={styles.canvas}>
+      {/* 
+        key={themeKey} forces a full unmount/remount of the entire Skia canvas
+        when the theme changes. This destroys Skia's internal GPU texture cache,
+        ensuring platforms, items, water, and backgrounds all rebuild with the
+        newly-selected theme's assets.
+      */}
+      <Canvas key={themeKey} style={styles.canvas}>
         <Rect x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT}>
-          <LinearGradient start={vec(0, 0)} end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)} colors={[PALETTE.BG_TOP, PALETTE.BG_MID, PALETTE.BG_BOTTOM]} />
+          <LinearGradient
+            start={vec(0, 0)}
+            end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)}
+            colors={[PALETTE.BG_TOP, PALETTE.BG_MID, PALETTE.BG_BOTTOM]}
+          />
         </Rect>
 
-        {bgSky && <Image image={bgSky} x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT} fit="cover" />}
+        {bgSky && (
+          <Image
+            image={bgSky}
+            x={0}
+            y={0}
+            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            height={GAME_CONFIG.VIRTUAL_HEIGHT}
+            fit="cover"
+          />
+        )}
 
         {bgCityFar && (
           <Group>
@@ -90,7 +109,13 @@ export default function GameCanvas({
         {waterTile ? (
           <Group>
             <Rect x={0} y={waterSurfaceY + waterBobY} width={GAME_CONFIG.VIRTUAL_WIDTH} height={waterHeight}>
-              <ImageShader image={waterTile} fit="none" rect={{ x: -waterScrollX, y: 0, width: WATER_TILE_W, height: waterHeight }} tx="repeat" ty="clamp" />
+              <ImageShader
+                image={waterTile}
+                fit="none"
+                rect={{ x: -waterScrollX, y: 0, width: WATER_TILE_W, height: waterHeight }}
+                tx="repeat"
+                ty="clamp"
+              />
             </Rect>
             <Rect x={0} y={waterSurfaceY + waterBobY} width={GAME_CONFIG.VIRTUAL_WIDTH} height={3} color={PALETTE.WHITE} opacity={0.62} />
             <Rect x={0} y={waterSurfaceY + waterBobY + 3} width={GAME_CONFIG.VIRTUAL_WIDTH} height={2} color={theme.colors.platformTopEdgeStart} opacity={0.45} />
@@ -126,7 +151,14 @@ export default function GameCanvas({
         )}
 
         {deathFadeAlpha > 0 && (
-          <Rect x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT} color="#070009" opacity={Math.min(1, deathFadeAlpha)} />
+          <Rect
+            x={0}
+            y={0}
+            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            height={GAME_CONFIG.VIRTUAL_HEIGHT}
+            color="#070009"
+            opacity={Math.min(1, deathFadeAlpha)}
+          />
         )}
       </Canvas>
     </View>
