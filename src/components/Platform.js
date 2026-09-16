@@ -10,6 +10,7 @@ import {
 } from '@shopify/react-native-skia';
 
 import { useTheme } from '../context/ThemeContext';
+import { THEMES } from '../constants/themes';
 
 const TILE_SIZE = 64;
 
@@ -17,15 +18,51 @@ export default function Platform({
   platforms,
 }) {
   const {
-    theme,
     themeKey,
   } = useTheme();
 
-  const platformTile =
+  /*
+   * Mount BOTH platform textures.
+   *
+   * This makes switching between Cyberpunk and Wooden
+   * deterministic and prevents Skia from retaining the
+   * previous image when the theme changes.
+   */
+  const cyberPlatformTile =
     useImage(
-      theme.assets
+      THEMES.cyberpunk.assets
         .platformTileset
     );
+
+  const woodenPlatformTile =
+    useImage(
+      THEMES.wooden.assets
+        .platformTileset
+    );
+
+  const platformTile =
+    themeKey === 'wooden'
+      ? woodenPlatformTile
+      : cyberPlatformTile;
+
+  /*
+   * The two platform assets have different dimensions.
+   * Use their actual tile dimensions rather than forcing
+   * the wooden texture into the Cyberpunk tile size.
+   */
+  const tileWidth =
+    themeKey === 'wooden'
+      ? 127
+      : TILE_SIZE;
+
+  const tileHeight =
+    themeKey === 'wooden'
+      ? 46
+      : TILE_SIZE;
+
+  const activeTheme =
+    THEMES[themeKey] ||
+    THEMES.cyberpunk;
 
   return (
     <Group
@@ -36,6 +73,7 @@ export default function Platform({
           <Group
             key={`${themeKey}-${plat.id}`}
           >
+            {/* Platform base */}
             <Rect
               x={plat.x}
               y={plat.y}
@@ -46,11 +84,12 @@ export default function Platform({
                 plat.height
               }
               color={
-                theme.colors
+                activeTheme.colors
                   .platformBase
               }
             />
 
+            {/* Theme-specific texture */}
             {platformTile && (
               <Rect
                 x={plat.x}
@@ -71,9 +110,9 @@ export default function Platform({
                     x: 0,
                     y: 0,
                     width:
-                      TILE_SIZE,
+                      tileWidth,
                     height:
-                      TILE_SIZE,
+                      tileHeight,
                   }}
                   tx="repeat"
                   ty="repeat"
@@ -81,7 +120,7 @@ export default function Platform({
               </Rect>
             )}
 
-            {/* Green gradient platform surface */}
+            {/* Green gradient surface */}
             <Rect
               x={plat.x}
               y={plat.y}
@@ -97,13 +136,13 @@ export default function Platform({
                   0
                 )}
                 colors={[
-                  theme.colors
-                    .platformTopEdgeStart ||
-                    '#7CFF7A',
+                  activeTheme
+                    .colors
+                    .platformTopEdgeStart,
 
-                  theme.colors
-                    .platformTopEdgeEnd ||
-                    '#16C172',
+                  activeTheme
+                    .colors
+                    .platformTopEdgeEnd,
                 ]}
               />
             </Rect>
@@ -125,13 +164,13 @@ export default function Platform({
                   0
                 )}
                 colors={[
-                  theme.colors
-                    .platformTopEdgeStart ||
-                    '#7CFF7A',
+                  activeTheme
+                    .colors
+                    .platformTopEdgeStart,
 
-                  theme.colors
-                    .platformTopEdgeEnd ||
-                    '#16C172',
+                  activeTheme
+                    .colors
+                    .platformTopEdgeEnd,
                 ]}
               />
             </Rect>

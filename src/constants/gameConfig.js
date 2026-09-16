@@ -15,12 +15,6 @@ export const GAME_CONFIG = {
 
   /*
    * Player physics use virtual pixels per second.
-   *
-   * The previous implementation treated gravity as
-   * "pixels per frame". That made movement dependent on
-   * the actual FPS of the device.
-   *
-   * These values are now time-based.
    */
   GRAVITY: 2100,
 
@@ -75,7 +69,13 @@ export const GAME_CONFIG = {
 
   GROUND_Y: 225,
 
-  PLATFORM_HEIGHT: 180,
+  /*
+   * The platform begins at Y=225 and now continues
+   * all the way to the bottom of the 450px virtual canvas.
+   *
+   * 450 - 225 = 225
+   */
+  PLATFORM_HEIGHT: 225,
 
   MIN_PLATFORM_WIDTH: 180,
 
@@ -85,7 +85,12 @@ export const GAME_CONFIG = {
 
   MAX_GAP: 115,
 
-  SPRITE_OFFSET_Y: 8,
+  /*
+   * The animation PNGs contain transparent pixels below
+   * the character's feet. A 10px visual offset places the
+   * visible feet directly on the platform surface.
+   */
+  SPRITE_OFFSET_Y: 10,
 
   // =========================
   // ITEMS
@@ -142,26 +147,17 @@ export const GAME_CONFIG = {
 
   MAGNET_RADIUS: 180,
 
-  // =========================
-  // COMBO
-  // =========================
-
+ 
   COMBO_TIMEOUT_FRAMES: 300,
 
   COMBO_SCORE_BONUS: 0.2,
 
-  // =========================
-  // WATER
-  // =========================
+  WATER_SURFACE_Y: 300,
 
-  /*
-   * Raised from 315.
-   */
-  WATER_LEVEL_Y: 300,
+ 
+  WATER_LEVEL_Y: 335,
 
-  /*
-   * Absolute safety boundary below the canvas.
-   */
+ 
   FALL_DEATH_Y: 430,
 
   MUSIC_BASE_VOLUME: 0.5,

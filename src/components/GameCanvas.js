@@ -17,11 +17,8 @@ import {
 } from '@shopify/react-native-skia';
 
 import { GAME_CONFIG } from '../constants/gameConfig';
-
 import { PALETTE } from '../constants/palette';
-
 import { useTheme } from '../context/ThemeContext';
-
 import { THEMES } from '../constants/themes';
 
 import Player from './Player';
@@ -44,57 +41,46 @@ export default function GameCanvas({
   deathFadeAlpha,
   skinColors,
 }) {
-  const {
-    theme,
-    themeKey,
-  } = useTheme();
+  const { theme, themeKey } = useTheme();
 
   /*
-   * Keep both theme image sets loaded.
+   * Keep both theme versions mounted.
    *
-   * This means changing themes does not depend on
-   * Skia decoding a brand-new image at the exact
-   * moment the user presses the theme button.
+   * This prevents a theme change from depending on a new
+   * Skia image decode at the exact moment of the switch.
    */
-  const cyberSky =
-    useImage(
-      THEMES.cyberpunk.assets.bgSky
-    );
 
-  const woodenSky =
-    useImage(
-      THEMES.wooden.assets.bgSky
-    );
+  const cyberSky = useImage(
+    THEMES.cyberpunk.assets.bgSky
+  );
 
-  const cyberFar =
-    useImage(
-      THEMES.cyberpunk.assets.bgFar
-    );
+  const woodenSky = useImage(
+    THEMES.wooden.assets.bgSky
+  );
 
-  const woodenFar =
-    useImage(
-      THEMES.wooden.assets.bgFar
-    );
+  const cyberFar = useImage(
+    THEMES.cyberpunk.assets.bgFar
+  );
 
-  const cyberNear =
-    useImage(
-      THEMES.cyberpunk.assets.bgNear
-    );
+  const woodenFar = useImage(
+    THEMES.wooden.assets.bgFar
+  );
 
-  const woodenNear =
-    useImage(
-      THEMES.wooden.assets.bgNear
-    );
+  const cyberNear = useImage(
+    THEMES.cyberpunk.assets.bgNear
+  );
 
-  const cyberWater =
-    useImage(
-      THEMES.cyberpunk.assets.waterTile
-    );
+  const woodenNear = useImage(
+    THEMES.wooden.assets.bgNear
+  );
 
-  const woodenWater =
-    useImage(
-      THEMES.wooden.assets.waterTile
-    );
+  const cyberWater = useImage(
+    THEMES.cyberpunk.assets.waterTile
+  );
+
+  const woodenWater = useImage(
+    THEMES.wooden.assets.waterTile
+  );
 
   const bgSky =
     themeKey === 'wooden'
@@ -124,11 +110,21 @@ export default function GameCanvas({
     (score * 1.35) %
     GAME_CONFIG.VIRTUAL_WIDTH;
 
+  /*
+   * WATER_SURFACE_Y controls where the water is actually
+   * drawn on screen.
+   *
+   * WATER_LEVEL_Y is lower and is used by the game logic
+   * as the death threshold.
+   */
+  const waterSurfaceY =
+    GAME_CONFIG.WATER_SURFACE_Y;
+
   const waterHeight =
     Math.max(
       0,
       GAME_CONFIG.VIRTUAL_HEIGHT -
-        GAME_CONFIG.WATER_LEVEL_Y
+        waterSurfaceY
     );
 
   const WATER_TILE_W = 180;
@@ -142,19 +138,37 @@ export default function GameCanvas({
       animFrame * 0.055
     ) * 2;
 
+  /*
+   * Determine how much of the player is currently below
+   * the visible water surface.
+   */
+  const playerBottom =
+    playerY +
+    GAME_CONFIG.PLAYER_HEIGHT;
+
+  const playerIsEnteringWater =
+    playerBottom >
+    waterSurfaceY;
+
+  const submergedTop =
+    Math.max(
+      waterSurfaceY,
+      playerY
+    );
+
+  const submergedHeight =
+    Math.max(
+      0,
+      playerBottom -
+        submergedTop
+    );
+
   return (
     <View
-      style={styles.container}
+      style={
+        styles.container
+      }
     >
-      {/*
-       * The key is critical.
-       *
-       * When themeKey changes, the complete Skia
-       * rendering subtree is recreated. That means
-       * Platform, Items and Player also receive the
-       * new theme assets instead of retaining an
-       * old Skia image object.
-       */}
       <Canvas
         key={`canvas-theme-${themeKey}`}
         style={styles.canvas}
@@ -285,7 +299,7 @@ export default function GameCanvas({
             <Rect
               x={0}
               y={
-                GAME_CONFIG.WATER_LEVEL_Y +
+                waterSurfaceY +
                 waterBobY
               }
               width={
@@ -315,21 +329,23 @@ export default function GameCanvas({
             <Rect
               x={0}
               y={
-                GAME_CONFIG.WATER_LEVEL_Y +
+                waterSurfaceY +
                 waterBobY
               }
               width={
                 GAME_CONFIG.VIRTUAL_WIDTH
               }
               height={3}
-              color={PALETTE.WHITE}
+              color={
+                PALETTE.WHITE
+              }
               opacity={0.62}
             />
 
             <Rect
               x={0}
               y={
-                GAME_CONFIG.WATER_LEVEL_Y +
+                waterSurfaceY +
                 waterBobY +
                 3
               }
@@ -346,9 +362,7 @@ export default function GameCanvas({
         ) : (
           <Rect
             x={0}
-            y={
-              GAME_CONFIG.WATER_LEVEL_Y
-            }
+            y={waterSurfaceY}
             width={
               GAME_CONFIG.VIRTUAL_WIDTH
             }
@@ -408,6 +422,33 @@ export default function GameCanvas({
         />
 
         {/* =========================
+            PLAYER WATER SUBMERGE
+        ========================== */}
+
+        {playerIsEnteringWater &&
+          submergedHeight > 0 && (
+            <Rect
+              x={
+                playerX - 3
+              }
+              y={
+                submergedTop
+              }
+              width={
+                GAME_CONFIG.PLAYER_WIDTH +
+                6
+              }
+              height={
+                submergedHeight
+              }
+              color={
+                theme.colors.waterColor
+              }
+              opacity={0.48}
+            />
+          )}
+
+        {/* =========================
             DEATH FADE
         ========================== */}
 
@@ -438,8 +479,10 @@ const styles =
     container: {
       width:
         GAME_CONFIG.VIRTUAL_WIDTH,
+
       height:
         GAME_CONFIG.VIRTUAL_HEIGHT,
+
       backgroundColor:
         '#030408',
     },
@@ -448,3 +491,10 @@ const styles =
       flex: 1,
     },
   });
+
+
+
+
+
+
+  

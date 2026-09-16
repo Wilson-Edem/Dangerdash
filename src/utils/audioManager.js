@@ -4,46 +4,214 @@ import {
 } from 'expo-audio';
 
 const SOUND_ASSETS = {
-  menu_theme: require('../../assets/audio/music/menu_theme.mp3'),
-  gameplay_track_1: require('../../assets/audio/music/gameplay_track_1.mp3'),
-  gameplay_track_2: require('../../assets/audio/music/gameplay_track_2.mp3'),
+  /*
+   * MENU MUSIC
+   *
+   * Played while the app is loading/booting and on
+   * the main menu.
+   */
+  menu_theme: require(
+    '../../assets/audio/music/menu_theme.mp3'
+  ),
 
-  ui_click: require('../../assets/audio/sfx/ui_click.wav'),
-  jump: require('../../assets/audio/sfx/jump.wav'),
-  power_jump: require('../../assets/audio/sfx/power_jump.wav'),
-  coin_pickup: require('../../assets/audio/sfx/coin_pickup.wav'),
-  powerup: require('../../assets/audio/sfx/powerup.wav'),
-  shield_hit: require('../../assets/audio/sfx/shield_hit.wav'),
-  heart_lost: require('../../assets/audio/sfx/heart_lost.wav'),
-  boost_pad: require('../../assets/audio/sfx/boost_pad.wav'),
-  water_splash: require('../../assets/audio/sfx/water_splash.wav'),
-  game_over: require('../../assets/audio/sfx/game_over.wav'),
+  /*
+   * GAMEPLAY MUSIC
+   */
+  gameplay_track_1: require(
+    '../../assets/audio/music/gameplay_track_1.mp3'
+  ),
+
+  gameplay_track_3: require(
+    '../../assets/audio/music/gameplay_track_3.mp3'
+  ),
+
+  /*
+   * SFX
+   */
+  ui_click: require(
+    '../../assets/audio/sfx/ui_click.wav'
+  ),
+
+  jump: require(
+    '../../assets/audio/sfx/jump.wav'
+  ),
+
+  power_jump: require(
+    '../../assets/audio/sfx/power_jump.wav'
+  ),
+
+  coin_pickup: require(
+    '../../assets/audio/sfx/coin_pickup.wav'
+  ),
+
+  powerup: require(
+    '../../assets/audio/sfx/powerup.wav'
+  ),
+
+  shield_hit: require(
+    '../../assets/audio/sfx/shield_hit.wav'
+  ),
+
+  heart_lost: require(
+    '../../assets/audio/sfx/heart_lost.wav'
+  ),
+
+  boost_pad: require(
+    '../../assets/audio/sfx/boost_pad.wav'
+  ),
+
+  water_splash: require(
+    '../../assets/audio/sfx/water_splash.wav'
+  ),
+
+  game_over: require(
+    '../../assets/audio/sfx/game_over.wav'
+  ),
 };
 
-const MUSIC_TRACKS = [
-  'menu_theme',
+/*
+ * These are the ONLY tracks used during gameplay.
+ *
+ * Note that the actual filename is gameplay_track_3,
+ * not gameplay_track_2.
+ */
+const GAMEPLAY_TRACKS = [
   'gameplay_track_1',
-  'gameplay_track_2',
+  'gameplay_track_3',
 ];
+
+const MUSIC_KEYS = new Set([
+  'menu_theme',
+  ...GAMEPLAY_TRACKS,
+]);
 
 const sfxPlayers = {};
 
 let musicPlayer = null;
+
+let musicSubscription = null;
+
 let currentMusicKey = null;
+
+let currentMusicGroup = null;
+
 let isPreloaded = false;
+
+/*
+ * Shuffle bag.
+ *
+ * Instead of doing Math.random() every time, we create a
+ * shuffled queue and consume it.
+ *
+ * With two tracks this guarantees that both tracks are
+ * played before the queue is reshuffled.
+ */
+let gameplayQueue = [];
+
+/*
+ * Used to invalidate old playback callbacks when music
+ * changes or stops.
+ */
+let musicGeneration = 0;
 
 let flags = {
   musicOn: true,
   soundOn: true,
 };
 
-export function setAudioFlags(next) {
+function shuffle(array) {
+  const result = [
+    ...array,
+  ];
+
+  for (
+    let i =
+      result.length - 1;
+    i > 0;
+    i -= 1
+  ) {
+    const j =
+      Math.floor(
+        Math.random() *
+          (i + 1)
+      );
+
+    [
+      result[i],
+      result[j],
+    ] = [
+      result[j],
+      result[i],
+    ];
+  }
+
+  return result;
+}
+
+function getNextGameplayTrack() {
+  if (
+    gameplayQueue.length ===
+    0
+  ) {
+    gameplayQueue =
+      shuffle(
+        GAMEPLAY_TRACKS
+      );
+  }
+
+  return gameplayQueue.shift();
+}
+
+function removeMusicListener() {
+  if (!musicSubscription) {
+    return;
+  }
+
+  try {
+    musicSubscription.remove();
+  } catch (e) {}
+
+  musicSubscription = null;
+}
+
+function releasePlayer(player) {
+  try {
+    if (
+      typeof player.release ===
+      'function'
+    ) {
+      player.release();
+    } else if (
+      typeof player.remove ===
+      'function'
+    ) {
+      player.remove();
+    }
+  } catch (e) {}
+}
+
+function stopAndReleasePlayer(
+  player
+) {
+  try {
+    player.pause();
+  } catch (e) {}
+
+  releasePlayer(player);
+}
+
+export function setAudioFlags(
+  next
+) {
   flags = {
     ...flags,
     ...next,
   };
 
-  if (!flags.musicOn && musicPlayer) {
+  if (
+    !flags.musicOn &&
+    musicPlayer
+  ) {
     try {
       musicPlayer.pause();
     } catch (e) {}
@@ -60,11 +228,11 @@ export function setAudioFlags(next) {
 
 export async function initAudioSession() {
   try {
-    
     await setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: false,
-      interruptionMode: 'doNotMix',
+      interruptionMode:
+        'doNotMix',
     });
   } catch (e) {
     console.warn(
@@ -81,10 +249,19 @@ export async function preloadAllAudio() {
 
   isPreloaded = true;
 
+  /*
+   * Preload SFX.
+   *
+   * Music is created when it is actually needed.
+   */
   for (
-    const key of Object.keys(SOUND_ASSETS)
+    const key of Object.keys(
+      SOUND_ASSETS
+    )
   ) {
-    if (MUSIC_TRACKS.includes(key)) {
+    if (
+      MUSIC_KEYS.has(key)
+    ) {
       continue;
     }
 
@@ -107,7 +284,9 @@ export async function preloadAllAudio() {
   }
 }
 
-export function playSFX(key) {
+export function playSFX(
+  key
+) {
   if (!flags.soundOn) {
     return;
   }
@@ -133,36 +312,93 @@ export async function playMusic(
     return;
   }
 
+  /*
+   * A gameplay key means:
+   *
+   * "start/resume the gameplay music system"
+   *
+   * rather than:
+   *
+   * "always play track 1".
+   */
+  const isGameplayTrack =
+    GAMEPLAY_TRACKS.includes(
+      key
+    );
+
+  const requestedGroup =
+    isGameplayTrack
+      ? 'gameplay'
+      : key === 'menu_theme'
+        ? 'menu'
+        : key;
+
+  let selectedKey = key;
+
   if (
-    currentMusicKey === key &&
-    musicPlayer
+    requestedGroup ===
+    'gameplay'
+  ) {
+    selectedKey =
+      getNextGameplayTrack();
+  }
+
+  /*
+   * Do not recreate an already playing menu track.
+   */
+  if (
+    currentMusicKey ===
+      selectedKey &&
+    musicPlayer &&
+    currentMusicGroup ===
+      requestedGroup
   ) {
     return;
   }
 
-  if (musicPlayer) {
-    const old =
-      musicPlayer;
+  const previousPlayer =
+    musicPlayer;
 
-    musicPlayer = null;
-    currentMusicKey = null;
+  /*
+   * Invalidate the old listener before replacing
+   * the current player.
+   */
+  musicGeneration += 1;
 
+  const thisGeneration =
+    musicGeneration;
+
+  musicPlayer = null;
+
+  currentMusicKey =
+    null;
+
+  currentMusicGroup =
+    null;
+
+  removeMusicListener();
+
+  /*
+   * Fade out the previous track.
+   */
+  if (previousPlayer) {
     fadeVolume(
-      old,
-      old.volume || 0,
+      previousPlayer,
+      previousPlayer.volume ||
+        0,
       0,
       fadeMs / 2,
-      () => {
-        try {
-          old.pause();
-          old.remove();
-        } catch (e) {}
-      }
+      () =>
+        stopAndReleasePlayer(
+          previousPlayer
+        )
     );
   }
 
   const asset =
-    SOUND_ASSETS[key];
+    SOUND_ASSETS[
+      selectedKey
+    ];
 
   if (!asset) {
     return;
@@ -174,18 +410,73 @@ export async function playMusic(
         asset
       );
 
-    player.loop = true;
+    /*
+     * MENU:
+     * loop forever.
+     *
+     * GAMEPLAY:
+     * do NOT loop. The playback listener below
+     * starts another shuffled gameplay track.
+     */
+    player.loop =
+      requestedGroup ===
+      'menu';
+
     player.volume = 0;
 
-    player.play();
+    musicPlayer =
+      player;
+
+    currentMusicKey =
+      selectedKey;
+
+    currentMusicGroup =
+      requestedGroup;
 
     /*
-     * No setActiveForLockScreen().
-     *
-     * DangerDash does not need background media playback.
+     * Automatically advance through the shuffled
+     * gameplay queue when the current song finishes.
      */
-    musicPlayer = player;
-    currentMusicKey = key;
+    if (
+      requestedGroup ===
+      'gameplay'
+    ) {
+      musicSubscription =
+        player.addListener(
+          'playbackStatusUpdate',
+          (status) => {
+            if (
+              thisGeneration !==
+                musicGeneration ||
+              musicPlayer !==
+                player ||
+              requestedGroup !==
+                'gameplay'
+            ) {
+              return;
+            }
+
+            if (
+              status.didJustFinish
+            ) {
+              removeMusicListener();
+
+              /*
+               * This requests another gameplay track.
+               * The shuffle bag decides which one.
+               */
+              playMusic(
+                'gameplay_track_1',
+                500
+              ).catch(
+                () => {}
+              );
+            }
+          }
+        );
+    }
+
+    player.play();
 
     fadeVolume(
       player,
@@ -195,7 +486,7 @@ export async function playMusic(
     );
   } catch (e) {
     console.warn(
-      `Music playback failed (${key}):`,
+      `Music playback failed (${selectedKey}):`,
       e
     );
   }
@@ -208,23 +499,34 @@ export function stopMusic(
     return;
   }
 
+  /*
+   * Invalidate any finish callback.
+   */
+  musicGeneration += 1;
+
   const player =
     musicPlayer;
 
   musicPlayer = null;
-  currentMusicKey = null;
+
+  currentMusicKey =
+    null;
+
+  currentMusicGroup =
+    null;
+
+  removeMusicListener();
 
   fadeVolume(
     player,
-    player.volume || 0.5,
+    player.volume ||
+      0.5,
     0,
     fadeMs,
-    () => {
-      try {
-        player.pause();
-        player.remove();
-      } catch (e) {}
-    }
+    () =>
+      stopAndReleasePlayer(
+        player
+      )
   );
 }
 
@@ -243,7 +545,8 @@ export function setMusicSpeedSync(
       );
 
     const rate =
-      1 + ratio * 0.15;
+      1 +
+      ratio * 0.15;
 
     if (
       typeof musicPlayer.setPlaybackRate ===
@@ -263,9 +566,12 @@ function fadeVolume(
   durationMs,
   onComplete
 ) {
-  if (durationMs <= 0) {
+  if (
+    durationMs <= 0
+  ) {
     try {
-      player.volume = to;
+      player.volume =
+        to;
     } catch (e) {}
 
     if (onComplete) {
@@ -281,33 +587,45 @@ function fadeVolume(
     durationMs / steps;
 
   const delta =
-    (to - from) / steps;
+    (to - from) /
+    steps;
 
   let current = from;
+
   let step = 0;
 
   const timer =
-    setInterval(() => {
-      step += 1;
-      current += delta;
+    setInterval(
+      () => {
+        step += 1;
 
-      try {
-        player.volume =
-          Math.max(
-            0,
-            Math.min(
-              1,
-              current
-            )
+        current += delta;
+
+        try {
+          player.volume =
+            Math.max(
+              0,
+              Math.min(
+                1,
+                current
+              )
+            );
+        } catch (e) {}
+
+        if (
+          step >= steps
+        ) {
+          clearInterval(
+            timer
           );
-      } catch (e) {}
 
-      if (step >= steps) {
-        clearInterval(timer);
-
-        if (onComplete) {
-          onComplete();
+          if (
+            onComplete
+          ) {
+            onComplete();
+          }
         }
-      }
-    }, stepDuration);
+      },
+      stepDuration
+    );
 }
