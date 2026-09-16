@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import {
   Group,
@@ -9,10 +9,79 @@ import {
 } from '@shopify/react-native-skia';
 
 import { useTheme } from '../context/ThemeContext';
-
 import { GAME_CONFIG } from '../constants/gameConfig';
-
 import { PALETTE } from '../constants/palette';
+
+/*
+ * ========================================
+ * PLAYER ANIMATION ASSETS
+ * ========================================
+ *
+ * The previous Player implementation used
+ * the old player_spritesheet.png.
+ *
+ * That spritesheet is NOT the animation set.
+ *
+ * DangerDash now uses the supplied individual
+ * animation images:
+ *
+ * RUN:
+ *   run_01
+ *   run_02
+ *   run_03
+ *   run_04
+ *   run_05
+ *
+ * AIRBORNE:
+ *   jump_01
+ *   jump_02
+ *   jump_03
+ *   jump_04
+ *   jump_05
+ *
+ * The jump set is also used for falling because
+ * there is no separate falling asset set.
+ */
+
+const RUN_01 = require(
+  '../../assets/images/player/animation/run/run_01.png'
+);
+
+const RUN_02 = require(
+  '../../assets/images/player/animation/run/run_02.png'
+);
+
+const RUN_03 = require(
+  '../../assets/images/player/animation/run/run_03.png'
+);
+
+const RUN_04 = require(
+  '../../assets/images/player/animation/run/run_04.png'
+);
+
+const RUN_05 = require(
+  '../../assets/images/player/animation/run/run_05.png'
+);
+
+const JUMP_01 = require(
+  '../../assets/images/player/animation/jump/jump_01.png'
+);
+
+const JUMP_02 = require(
+  '../../assets/images/player/animation/jump/jump_02.png'
+);
+
+const JUMP_03 = require(
+  '../../assets/images/player/animation/jump/jump_03.png'
+);
+
+const JUMP_04 = require(
+  '../../assets/images/player/animation/jump/jump_04.png'
+);
+
+const JUMP_05 = require(
+  '../../assets/images/player/animation/jump/jump_05.png'
+);
 
 export default function Player({
   playerX,
@@ -27,108 +96,281 @@ export default function Player({
 }) {
   const { theme, themeKey } = useTheme();
 
-  const spriteImage = useImage(
-    theme.assets.playerSprite
-  );
+  // ========================================
+  // LOAD PLAYER ANIMATION
+  // ========================================
+
+  const run01 = useImage(RUN_01);
+  const run02 = useImage(RUN_02);
+  const run03 = useImage(RUN_03);
+  const run04 = useImage(RUN_04);
+  const run05 = useImage(RUN_05);
+
+  const jump01 = useImage(JUMP_01);
+  const jump02 = useImage(JUMP_02);
+  const jump03 = useImage(JUMP_03);
+  const jump04 = useImage(JUMP_04);
+  const jump05 = useImage(JUMP_05);
 
   const shieldAuraImage = useImage(
     theme.assets.shieldAura
   );
 
-  const imgWidth =
-    spriteImage?.width() || 0;
+  const runFrames = [
+    run01,
+    run02,
+    run03,
+    run04,
+    run05,
+  ];
 
-  const imgHeight =
-    spriteImage?.height() || 0;
+  const jumpFrames = [
+    jump01,
+    jump02,
+    jump03,
+    jump04,
+    jump05,
+  ];
 
-  const frameWidth =
-    imgWidth > 0
-      ? imgWidth / 4
-      : GAME_CONFIG.PLAYER_WIDTH;
+  // ========================================
+  // JUMP ANIMATION TRACKING
+  // ========================================
 
-  const frameHeight =
-    imgHeight > 0
-      ? imgHeight
-      : GAME_CONFIG.PLAYER_HEIGHT;
+  const wasGroundedRef =
+    useRef(isGrounded);
 
-  const currentFrame =
+  const jumpStartFrameRef =
+    useRef(animFrame);
+
+  const previousYRef =
+    useRef(playerY);
+
+  /*
+   * Detect the exact frame on which the
+   * player leaves or returns to a platform.
+   *
+   * This resets the airborne animation so
+   * every jump starts from jump_01.
+   */
+  useEffect(() => {
+    if (
+      !isGrounded &&
+      wasGroundedRef.current
+    ) {
+      jumpStartFrameRef.current =
+        animFrame;
+    }
+
+    if (
+      isGrounded &&
+      !wasGroundedRef.current
+    ) {
+      jumpStartFrameRef.current =
+        animFrame;
+    }
+
+    wasGroundedRef.current =
+      isGrounded;
+  }, [
+    isGrounded,
+    animFrame,
+  ]);
+
+  // ========================================
+  // DETECT RISING / FALLING
+  // ========================================
+
+  /*
+   * We determine the movement direction
+   * from the actual physics Y position.
+   *
+   * Normal gravity:
+   *
+   *   Y decreasing = rising
+   *   Y increasing = falling
+   *
+   * Gravity flip:
+   *
+   *   Y increasing = rising
+   *   Y decreasing = falling
+   *
+   * This means the animation follows the
+   * actual player movement instead of simply
+   * assuming every airborne frame is a jump.
+   */
+
+  const previousY =
+    previousYRef.current;
+
+  const yDelta =
+    playerY - previousY;
+
+  previousYRef.current =
+    playerY;
+
+  let movementPhase =
+    'rising';
+
+  if (
+    Math.abs(yDelta) < 0.01
+  ) {
+    /*
+     * When movement is extremely small,
+     * keep the current airborne sequence
+     * moving rather than switching randomly.
+     */
+    movementPhase = 'rising';
+  } else if (!gravityFlipped) {
+    movementPhase =
+      yDelta > 0
+        ? 'falling'
+        : 'rising';
+  } else {
+    movementPhase =
+      yDelta < 0
+        ? 'falling'
+        : 'rising';
+  }
+
+  // ========================================
+  // RUNNING ANIMATION
+  // ========================================
+
+  /*
+   * The game loop already increments
+   * animFrame.
+   *
+   * Five frames gives us a complete running
+   * cycle.
+   */
+  const runFrameIndex =
+    Math.floor(animFrame) %
+    runFrames.length;
+
+  // ========================================
+  // AIRBORNE ANIMATION
+  // ========================================
+
+  const jumpTick =
+    Math.max(
+      0,
+      Math.floor(animFrame) -
+        Math.floor(
+          jumpStartFrameRef.current
+        )
+    );
+
+  let jumpFrameIndex;
+
+  /*
+   * ASCENDING
+   *
+   * 01 -> 02 -> 03
+   */
+  if (
+    movementPhase === 'rising'
+  ) {
+    jumpFrameIndex =
+      Math.min(
+        2,
+        Math.floor(
+          jumpTick / 3
+        )
+      );
+  }
+
+  /*
+   * FALLING
+   *
+   * 04 -> 05
+   *
+   * We intentionally skip back to
+   * jump_01 while descending.
+   */
+  else {
+    jumpFrameIndex =
+      Math.min(
+        4,
+        3 +
+          Math.floor(
+            jumpTick / 3
+          )
+      );
+  }
+
+  /*
+   * Grounded:
+   *     RUN animation
+   *
+   * Airborne:
+   *     JUMP/FALL animation
+   */
+  const currentImage =
     isGrounded
-      ? animFrame % 4
-      : 1;
+      ? runFrames[
+          runFrameIndex
+        ]
+      : jumpFrames[
+          jumpFrameIndex
+        ];
+
+  // ========================================
+  // COLORS
+  // ========================================
+
+  const skinColor =
+    (skinColors &&
+      skinColors[0]) ||
+    theme.colors.hudBorder;
 
   const auraColor =
     (activePower &&
       PALETTE.POWER_COLORS[
         activePower
       ]) ||
-    (skinColors &&
-      skinColors[0]) ||
+    skinColor ||
     theme.colors.comboText;
 
-  /*
-   * ========================================
-   * VISIBLE PLAYER SIZE
-   * ========================================
-   *
-   * Physics remains 50x66.
-   *
-   * The visible sprite is 15% smaller:
-   *
-   * 50 x 0.85 = 42.5
-   * 66 x 0.85 = 56.1
-   *
-   * We then bottom-align the sprite against
-   * the physics hitbox.
-   *
-   * This means the visible feet sit directly
-   * on the platform instead of extending below it.
-   */
+  // ========================================
+  // PLAYER RENDER SIZE
+  // ========================================
 
-  const renderScale =
-    GAME_CONFIG.PLAYER_RENDER_SCALE || 0.85;
+  /*
+   * IMPORTANT:
+   *
+   * Do NOT use the old PLAYER_RENDER_SCALE
+   * here.
+   *
+   * The supplied animation implementation
+   * uses the same 50x66 player box as the
+   * physics hitbox.
+   *
+   * This keeps the visual player and physics
+   * player synchronized.
+   */
 
   const renderWidth =
-    GAME_CONFIG.PLAYER_WIDTH *
-    renderScale;
+    GAME_CONFIG.PLAYER_WIDTH;
 
   const renderHeight =
-    GAME_CONFIG.PLAYER_HEIGHT *
-    renderScale;
+    GAME_CONFIG.PLAYER_HEIGHT;
 
   /*
-   * Difference between the physics height
-   * and visible sprite height.
+   * The supplied animation implementation
+   * uses SPRITE_OFFSET_Y = 10.
    *
-   * This keeps the bottom of the sprite
-   * aligned with the physics feet.
-   */
-  const bottomAlignmentOffset =
-    GAME_CONFIG.PLAYER_HEIGHT -
-    renderHeight;
-
-  /*
-   * Additional configurable visual offset.
-   *
-   * Currently 0.
+   * This compensates for transparent padding
+   * inside the animation PNGs.
    */
   const offsetY =
-    GAME_CONFIG.SPRITE_OFFSET_Y || 0;
+    GAME_CONFIG.SPRITE_OFFSET_Y ||
+    0;
+
+  const renderX =
+    playerX;
 
   const renderY =
-    playerY +
-    bottomAlignmentOffset +
-    offsetY;
-
-  /*
-   * Center the smaller sprite inside
-   * the original physics hitbox.
-   */
-  const renderX =
-    playerX +
-    (
-      GAME_CONFIG.PLAYER_WIDTH -
-      renderWidth
-    ) / 2;
+    playerY + offsetY;
 
   const centerX =
     renderX +
@@ -142,17 +384,36 @@ export default function Player({
     <Group
       key={`player-theme-${themeKey}`}
     >
-      {/* =========================
-          POWER AURA
-      ========================== */}
+
+      {/* =================================
+          PLAYER BASE GLOW
+      ================================== */}
+
+      <Circle
+        cx={centerX}
+        cy={centerY}
+        r={
+          renderHeight * 0.58
+        }
+        color={skinColor}
+        opacity={0.16}
+      >
+        <BlurMask
+          blur={10}
+          style="solid"
+        />
+      </Circle>
+
+      {/* =================================
+          ACTIVE POWER AURA
+      ================================== */}
 
       {activePower && (
         <Circle
           cx={centerX}
           cy={centerY}
           r={
-            GAME_CONFIG.PLAYER_HEIGHT *
-            0.88
+            renderHeight * 0.88
           }
           color={auraColor}
           opacity={0.38}
@@ -164,17 +425,16 @@ export default function Player({
         </Circle>
       )}
 
-      {/* =========================
+      {/* =================================
           POWER JUMP FLASH
-      ========================== */}
+      ================================== */}
 
       {powerJumpFlash > 0 && (
         <Circle
           cx={centerX}
           cy={centerY}
           r={
-            GAME_CONFIG.PLAYER_HEIGHT *
-            0.78
+            renderHeight * 0.78
           }
           color={
             theme.colors.hudBorder
@@ -191,15 +451,17 @@ export default function Player({
         </Circle>
       )}
 
-      {/* =========================
-          PLAYER SPRITE
-      ========================== */}
+      {/* =================================
+          RUN / JUMP / FALL PLAYER
+      ================================== */}
 
-      {spriteImage && (
+      {currentImage && (
         <Image
-          image={spriteImage}
+          image={currentImage}
 
-          x={Math.round(renderX)}
+          x={Math.round(
+            renderX
+          )}
 
           y={Math.round(
             gravityFlipped
@@ -208,7 +470,9 @@ export default function Player({
               : renderY
           )}
 
-          width={renderWidth}
+          width={
+            renderWidth
+          }
 
           height={
             gravityFlipped
@@ -217,40 +481,37 @@ export default function Player({
           }
 
           /*
-           * contain keeps the sprite
-           * aspect ratio correct.
+           * The supplied animation PNGs
+           * contain transparent padding.
+           *
+           * contain preserves their original
+           * proportions.
            */
           fit="contain"
-
-          rect={{
-            x:
-              currentFrame *
-              frameWidth,
-
-            y: 0,
-
-            width: frameWidth,
-
-            height: frameHeight,
-          }}
         />
       )}
 
-      {/* =========================
+      {/* =================================
           SHIELD
-      ========================== */}
+      ================================== */}
 
       {hasShield &&
         shieldAuraImage && (
           <Image
-            image={shieldAuraImage}
+            image={
+              shieldAuraImage
+            }
 
             x={
-              Math.round(renderX) - 18
+              Math.round(
+                renderX
+              ) - 18
             }
 
             y={
-              Math.round(renderY) - 16
+              Math.round(
+                renderY
+              ) - 16
             }
 
             width={
@@ -264,6 +525,7 @@ export default function Player({
             fit="contain"
           />
         )}
+
     </Group>
   );
-}
+    }
