@@ -17,18 +17,27 @@ const WOOD_TILE_H = 46;
 export default function Platform({ platforms }) {
   const { theme, themeKey } = useTheme();
 
-  const cyberTile = useImage(THEMES.cyberpunk.assets.platformTileset);
-  const woodenTile = useImage(THEMES.wooden.assets.platformTileset);
-  const platformTile = themeKey === 'wooden' ? woodenTile : cyberTile;
+  const cyberTile = useImage(
+    THEMES.cyberpunk.assets.platformTileset
+  );
 
-  const tileW = themeKey === 'wooden' ? WOOD_TILE_W : CYBER_TILE;
-  const tileH = themeKey === 'wooden' ? WOOD_TILE_H : CYBER_TILE;
+  const woodenTile = useImage(
+    THEMES.wooden.assets.platformTileset
+  );
+
+  const platformTile =
+    themeKey === 'wooden' ? woodenTile : cyberTile;
+
+  const tileW =
+    themeKey === 'wooden' ? WOOD_TILE_W : CYBER_TILE;
+
+  const tileH =
+    themeKey === 'wooden' ? WOOD_TILE_H : CYBER_TILE;
 
   return (
-    <Group>
+    <Group key={`platform-theme-${themeKey}`}>
       {platforms.map((plat) => (
         <Group key={`${themeKey}-${plat.id}`}>
-          {/* Solid base */}
           <Rect
             x={plat.x}
             y={plat.y}
@@ -37,7 +46,6 @@ export default function Platform({ platforms }) {
             color={theme.colors.platformBase}
           />
 
-          {/* Theme tileset texture */}
           {platformTile && (
             <Rect
               x={plat.x}
@@ -48,15 +56,24 @@ export default function Platform({ platforms }) {
               <ImageShader
                 image={platformTile}
                 fit="none"
-                rect={{ x: 0, y: 0, width: tileW, height: tileH }}
+                rect={{
+                  x: 0,
+                  y: 0,
+                  width: tileW,
+                  height: tileH,
+                }}
                 tx="repeat"
                 ty="repeat"
               />
             </Rect>
           )}
 
-          {/* Top edge gradient */}
-          <Rect x={plat.x} y={plat.y} width={plat.width} height={8}>
+          <Rect
+            x={plat.x}
+            y={plat.y}
+            width={plat.width}
+            height={8}
+          >
             <LinearGradient
               start={vec(0, 0)}
               end={vec(plat.width, 0)}
