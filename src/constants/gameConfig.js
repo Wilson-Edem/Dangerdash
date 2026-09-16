@@ -13,14 +13,11 @@ export const GAME_CONFIG = {
   // PHYSICS
   // =========================
 
-  /*
-   * Player physics use virtual pixels per second.
-   */
-  GRAVITY: 2100,
+  GRAVITY: 1.0,
 
   FALL_GRAVITY_MULTIPLIER: 1.45,
 
-  MAX_FALL_SPEED: 1200,
+  MAX_FALL_SPEED: 17,
 
   BASE_SPEED: 6.0,
 
@@ -50,12 +47,9 @@ export const GAME_CONFIG = {
   // JUMP
   // =========================
 
-  /*
-   * Negative Y velocity means upward movement.
-   */
-  JUMP_FORCE: -720,
+  JUMP_FORCE: -13.5,
 
-  POWER_JUMP_FORCE: -980,
+  POWER_JUMP_FORCE: -23.0,
 
   MAX_MIDAIR_JUMPS: 1,
 
@@ -69,27 +63,20 @@ export const GAME_CONFIG = {
 
   GROUND_Y: 225,
 
-  /*
-   * The platform begins at Y=225 and now continues
-   * all the way to the bottom of the 450px virtual canvas.
-   *
-   * 450 - 225 = 225
-   */
   PLATFORM_HEIGHT: 225,
 
-  MIN_PLATFORM_WIDTH: 180,
+  MIN_PLATFORM_WIDTH: 250,
 
-  MAX_PLATFORM_WIDTH: 420,
-
-  STANDARD_GAP: 65,
-
-  MAX_GAP: 115,
+  MAX_PLATFORM_WIDTH: 520,
 
   /*
-   * The animation PNGs contain transparent pixels below
-   * the character's feet. A 10px visual offset places the
-   * visible feet directly on the platform surface.
+   * Smaller gaps make the early game playable
+   * while still requiring jumps.
    */
+  STANDARD_GAP: 45,
+
+  MAX_GAP: 155,
+
   SPRITE_OFFSET_Y: 10,
 
   // =========================
@@ -147,18 +134,23 @@ export const GAME_CONFIG = {
 
   MAGNET_RADIUS: 180,
 
- 
+  // =========================
+  // COMBO
+  // =========================
+
   COMBO_TIMEOUT_FRAMES: 300,
 
   COMBO_SCORE_BONUS: 0.2,
 
-  WATER_SURFACE_Y: 300,
+  // =========================
+  // WATER
+  // =========================
 
- 
-  WATER_LEVEL_Y: 335,
+  WATER_LEVEL_Y: 365,
 
- 
-  FALL_DEATH_Y: 430,
+  FALL_DEATH_Y: 470,
+
+  
 
   MUSIC_BASE_VOLUME: 0.5,
 

@@ -1,52 +1,74 @@
 export const UPGRADES = [
   {
-    id: 'extra_jump',
-
-    name: 'Extra Jump',
-
-    description:
-      'Add a 3rd mid-air jump',
-
-    maxLevel: 1,
-
-    costs: [150],
-  },
-
-  {
     id: 'magnet_range',
-
     name: 'Magnet Range',
-
-    description:
-      '+30px pickup radius per level',
-
+    description: '+30px pickup radius per level',
     maxLevel: 5,
-
-    costs: [
-      75,
-      150,
-      300,
-      500,
-      750,
-    ],
+    minLevel: 1,
+    tier: 'LOW',
+    costs: [50, 90, 140, 220, 320],
   },
-
+  {
+    id: 'extra_jump',
+    name: 'Extra Jump',
+    description: 'Add a 3rd mid-air jump',
+    maxLevel: 1,
+    minLevel: 2,
+    tier: 'LOW',
+    costs: [180],
+  },
   {
     id: 'slow_fall',
-
     name: 'Slow Fall',
-
-    description:
-      'Reduce gravity by 5% per level',
-
+    description: 'Reduce gravity by 5% per level',
     maxLevel: 5,
-
-    costs: [
-      75,
-      150,
-      300,
-      500,
-      750,
-    ],
+    minLevel: 2,
+    tier: 'LOW',
+    costs: [60, 110, 180, 260, 380],
+  },
+  {
+    id: 'coin_yield',
+    name: 'Coin Yield',
+    description: '+1 bonus coin for every run per level',
+    maxLevel: 4,
+    minLevel: 3,
+    tier: 'MEDIUM',
+    costs: [180, 300, 480, 700],
+  },
+  {
+    id: 'xp_catalyst',
+    name: 'XP Catalyst',
+    description: '+10% XP from completed challenges per level',
+    maxLevel: 3,
+    minLevel: 3,
+    tier: 'MEDIUM',
+    costs: [240, 420, 700],
+  },
+  {
+    id: 'challenge_bonus',
+    name: 'Challenge Bonus',
+    description: '+10% coin reward from challenge claims per level',
+    maxLevel: 3,
+    minLevel: 4,
+    tier: 'MEDIUM',
+    costs: [320, 560, 900],
+  },
+  {
+    id: 'elite_magnet',
+    name: 'Elite Magnet',
+    description: '+30px extra pickup radius per level',
+    maxLevel: 3,
+    minLevel: 5,
+    tier: 'HIGH',
+    costs: [600, 900, 1300],
+  },
+  {
+    id: 'legendary_fall',
+    name: 'Legendary Fall Control',
+    description: 'Reduce gravity by an extra 5% per level',
+    maxLevel: 3,
+    minLevel: 6,
+    tier: 'HIGH',
+    costs: [850, 1200, 1700],
   },
 ];

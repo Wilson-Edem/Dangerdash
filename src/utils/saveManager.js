@@ -1,52 +1,37 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LEVELS, MAX_LEVEL, getLevelDefinition } from '../constants/levels';
 
-const KEY =
-  '@danger_dash_save_v1';
+const KEY = '@danger_dash_save_v1';
 
 const DEFAULT_SAVE = {
   totalCoins: 0,
-
   highScore: 0,
-
-  ownedSkins: [
-    'default',
-  ],
-
-  equippedSkin:
-    'default',
-
+  totalXP: 0,
+  xp: 0,
+  currentLevel: 1,
+  unlockedLevels: [1],
+  ownedSkins: ['default'],
+  equippedSkin: 'default',
   upgrades: {
     extra_jump: 0,
     magnet_range: 0,
     slow_fall: 0,
+    coin_yield: 0,
+    xp_catalyst: 0,
+    challenge_bonus: 0,
+    elite_magnet: 0,
+    legendary_fall: 0,
   },
-
   runLog: [],
-
   challengeProgress: {},
-
-  challengeProgressDate:
-    '',
-
-  challengeClaimedDate:
-    '',
-
-  challengeCompletedIds:
-    [],
-
-  /*
-   * Challenges completed today but not yet claimed.
-   * These IDs drive the red DAILY button badge.
-   */
-  challengeNotificationIds:
-    [],
-
+  challengeProgressDate: '',
+  challengeClaimedDate: '',
+  challengeCompletedIds: [],
+  challengeXpAwardedIds: [],
+  challengeNotificationIds: [],
   totalRunsPlayed: 0,
-
   totalJumps: 0,
-
   totalShieldPickups: 0,
-
   settings: {
     soundOn: true,
     musicOn: true,
@@ -57,294 +42,250 @@ const DEFAULT_SAVE = {
 let cachedSave = null;
 
 function getLocalDateKey() {
-  const d =
-    new Date();
-
+  const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
+function normalizeSave(parsed = {}) {
+  const merged = {
+    ...DEFAULT_SAVE,
+    ...parsed,
+    upgrades: {
+      ...DEFAULT_SAVE.upgrades,
+      ...(parsed.upgrades || {}),
+    },
+    settings: {
+      ...DEFAULT_SAVE.settings,
+      ...(parsed.settings || {}),
+    },
+    ownedSkins: Array.isArray(parsed.ownedSkins) ? parsed.ownedSkins : ['default'],
+    unlockedLevels: Array.isArray(parsed.unlockedLevels) && parsed.unlockedLevels.length
+      ? parsed.unlockedLevels
+      : [1],
+    challengeCompletedIds: Array.isArray(parsed.challengeCompletedIds) ? parsed.challengeCompletedIds : [],
+    challengeXpAwardedIds: Array.isArray(parsed.challengeXpAwardedIds) ? parsed.challengeXpAwardedIds : [],
+    challengeNotificationIds: Array.isArray(parsed.challengeNotificationIds) ? parsed.challengeNotificationIds : [],
+  };
+
+  merged.currentLevel = Math.max(1, Math.min(MAX_LEVEL, Number(merged.currentLevel || 1)));
+  merged.totalXP = Math.max(0, Number(merged.totalXP || 0));
+  merged.xp = Math.max(0, Number(merged.xp || 0));
+
+  const validUnlocked = merged.unlockedLevels
+    .map(Number)
+    .filter((level) => level >= 1 && level <= MAX_LEVEL);
+
+  merged.unlockedLevels = [...new Set([1, ...validUnlocked])].sort((a, b) => a - b);
+  merged.currentLevel = Math.max(...merged.unlockedLevels);
+
+  return merged;
+}
+
+async function persist() {
+  try {
+    await AsyncStorage.setItem(KEY, JSON.stringify(cachedSave));
+  } catch (e) {}
+}
+
 export async function loadSave() {
-  const today =
-    getLocalDateKey();
+  const today = getLocalDateKey();
 
   if (cachedSave) {
-    if (
-      cachedSave.challengeProgressDate !==
-      today
-    ) {
+    if (cachedSave.challengeProgressDate !== today) {
       cachedSave = {
         ...cachedSave,
-
         challengeProgress: {},
-
-        challengeCompletedIds:
-          [],
-
-        challengeNotificationIds:
-          [],
-
-        challengeProgressDate:
-          today,
+        challengeCompletedIds: [],
+        challengeXpAwardedIds: [],
+        challengeNotificationIds: [],
+        challengeProgressDate: today,
+        challengeClaimedDate: '',
       };
-
-      try {
-        await AsyncStorage.setItem(
-          KEY,
-          JSON.stringify(
-            cachedSave
-          )
-        );
-      } catch (e) {}
-
+      await persist();
     }
-
     return cachedSave;
   }
 
   try {
-    const raw =
-      await AsyncStorage.getItem(
-        KEY
-      );
+    const raw = await AsyncStorage.getItem(KEY);
 
     if (!raw) {
       cachedSave = {
         ...DEFAULT_SAVE,
-
-        challengeProgressDate:
-          today,
+        challengeProgressDate: today,
       };
-
       return cachedSave;
     }
 
-    const parsed =
-      JSON.parse(raw);
+    cachedSave = normalizeSave(JSON.parse(raw));
 
-    cachedSave = {
-      ...DEFAULT_SAVE,
-      ...parsed,
-
-      challengeNotificationIds:
-        parsed.challengeNotificationIds ||
-        [],
-    };
-
-    if (
-      cachedSave.challengeProgressDate !==
-      today
-    ) {
-      cachedSave.challengeProgress =
-        {};
-
-      cachedSave.challengeCompletedIds =
-        [];
-
-      cachedSave.challengeNotificationIds =
-        [];
-
-      cachedSave.challengeProgressDate =
-        today;
-
-      await AsyncStorage.setItem(
-        KEY,
-        JSON.stringify(
-          cachedSave
-        )
-      );
+    if (cachedSave.challengeProgressDate !== today) {
+      cachedSave.challengeProgress = {};
+      cachedSave.challengeCompletedIds = [];
+      cachedSave.challengeXpAwardedIds = [];
+      cachedSave.challengeNotificationIds = [];
+      cachedSave.challengeProgressDate = today;
+      cachedSave.challengeClaimedDate = '';
+      await persist();
     }
 
     return cachedSave;
   } catch (e) {
     cachedSave = {
       ...DEFAULT_SAVE,
-
-      challengeProgressDate:
-        today,
+      challengeProgressDate: today,
     };
-
     return cachedSave;
   }
 }
 
-export async function writeSave(
-  partial
-) {
-  cachedSave = {
-    ...(cachedSave ||
-      DEFAULT_SAVE),
-
-    ...partial,
-  };
-
-  try {
-    await AsyncStorage.setItem(
-      KEY,
-      JSON.stringify(
-        cachedSave
-      )
-    );
-  } catch (e) {}
-
+export async function writeSave(partial) {
+  const base = cachedSave || DEFAULT_SAVE;
+  cachedSave = normalizeSave({ ...base, ...partial });
+  await persist();
   return cachedSave;
 }
 
-export async function addCoins(
-  amount
-) {
-  const save =
-    await loadSave();
+export async function addCoins(amount) {
+  const save = await loadSave();
+  return writeSave({ totalCoins: save.totalCoins + Math.max(0, Number(amount || 0)) });
+}
+
+export async function spendCoins(amount) {
+  const save = await loadSave();
+  const value = Math.max(0, Number(amount || 0));
+  if (save.totalCoins < value) return false;
+  await writeSave({ totalCoins: save.totalCoins - value });
+  return true;
+}
+
+export async function unlockSkin(skinId, price, minLevel = 1) {
+  const save = await loadSave();
+
+  if (save.currentLevel < minLevel) return false;
+  if (save.ownedSkins.includes(skinId)) return true;
+
+  const value = Math.max(0, Number(price || 0));
+  if (save.totalCoins < value) return false;
+
+  await writeSave({
+    totalCoins: save.totalCoins - value,
+    ownedSkins: [...save.ownedSkins, skinId],
+  });
+
+  return true;
+}
+
+export async function equipSkin(skinId) {
+  const save = await loadSave();
+  if (!save.ownedSkins.includes(skinId)) return false;
+  await writeSave({ equippedSkin: skinId });
+  return true;
+}
+
+export async function buyUpgrade(upgradeId, cost, currentLevel, minLevel = 1) {
+  const save = await loadSave();
+
+  if (save.currentLevel < minLevel) return false;
+  if (save.totalCoins < cost) return false;
+
+  const upgrades = {
+    ...save.upgrades,
+    [upgradeId]: currentLevel + 1,
+  };
+
+  // Elite upgrades build on the core upgrades already used by the runner.
+  if (upgradeId === 'elite_magnet') {
+    upgrades.magnet_range = Math.min(8, Number(save.upgrades.magnet_range || 0) + 1);
+  }
+
+  if (upgradeId === 'legendary_fall') {
+    upgrades.slow_fall = Math.min(8, Number(save.upgrades.slow_fall || 0) + 1);
+  }
+
+  await writeSave({
+    totalCoins: save.totalCoins - cost,
+    upgrades,
+  });
+
+  return true;
+}
+
+export async function addXP(amount) {
+  const save = await loadSave();
+  const value = Math.max(0, Math.floor(Number(amount || 0)));
+
+  if (!value) return save;
 
   return writeSave({
-    totalCoins:
-      save.totalCoins +
-      amount,
+    xp: save.xp + value,
+    totalXP: save.totalXP + value,
   });
 }
 
-export async function spendCoins(
-  amount
-) {
-  const save =
-    await loadSave();
+export async function spendXP(amount) {
+  const save = await loadSave();
+  const value = Math.max(0, Math.floor(Number(amount || 0)));
 
-  if (
-    save.totalCoins <
-    amount
-  ) {
-    return false;
-  }
+  if (save.xp < value) return false;
 
-  await writeSave({
-    totalCoins:
-      save.totalCoins -
-      amount,
-  });
-
+  await writeSave({ xp: save.xp - value });
   return true;
 }
 
-export async function unlockSkin(
-  skinId,
-  price
-) {
-  const save =
-    await loadSave();
+export async function unlockNextLevel() {
+  const save = await loadSave();
+  const nextLevel = save.currentLevel + 1;
 
-  if (
-    save.ownedSkins.includes(
-      skinId
-    )
-  ) {
-    return true;
+  if (nextLevel > MAX_LEVEL) {
+    return { ok: false, reason: 'MAX_LEVEL', save };
   }
 
-  if (
-    save.totalCoins <
-    price
-  ) {
-    return false;
+  const definition = getLevelDefinition(nextLevel);
+
+  if (save.totalXP < definition.requiredXP) {
+    return { ok: false, reason: 'XP_REQUIREMENT', save };
   }
 
-  await writeSave({
-    totalCoins:
-      save.totalCoins -
-      price,
-
-    ownedSkins: [
-      ...save.ownedSkins,
-      skinId,
-    ],
-  });
-
-  return true;
-}
-
-export async function equipSkin(
-  skinId
-) {
-  await writeSave({
-    equippedSkin:
-      skinId,
-  });
-}
-
-export async function buyUpgrade(
-  upgradeId,
-  cost,
-  currentLevel
-) {
-  const save =
-    await loadSave();
-
-  if (
-    save.totalCoins <
-    cost
-  ) {
-    return false;
+  if (save.xp < definition.unlockCost) {
+    return { ok: false, reason: 'XP_COST', save };
   }
 
-  await writeSave({
-    totalCoins:
-      save.totalCoins -
-      cost,
+  const unlockedLevels = [...new Set([...save.unlockedLevels, nextLevel])].sort((a, b) => a - b);
 
-    upgrades: {
-      ...save.upgrades,
-
-      [upgradeId]:
-        currentLevel + 1,
-    },
+  const updated = await writeSave({
+    xp: save.xp - definition.unlockCost,
+    currentLevel: nextLevel,
+    unlockedLevels,
   });
 
-  return true;
+  return { ok: true, save: updated };
 }
 
-export async function recordRun(
-  score,
-  coins
-) {
-  const save =
-    await loadSave();
+export async function recordRun(score, coins) {
+  const save = await loadSave();
+  const safeCoins = Math.max(0, Number(coins || 0));
+  const coinBonus = Math.max(0, Number(save.upgrades.coin_yield || 0));
 
   const newLog = [
-    {
-      score,
-      coins,
-      date: Date.now(),
-    },
-
+    { score, coins: safeCoins, date: Date.now() },
     ...save.runLog,
   ].slice(0, 10);
 
-  const isHigh =
-    score >
-    save.highScore;
+  const isHigh = score > save.highScore;
 
   await writeSave({
-    totalCoins:
-      save.totalCoins +
-      coins,
-
-    highScore:
-      isHigh
-        ? score
-        : save.highScore,
-
-    runLog:
-      newLog,
-
-    totalRunsPlayed:
-      save.totalRunsPlayed +
-      1,
+    totalCoins: save.totalCoins + safeCoins + coinBonus,
+    highScore: isHigh ? score : save.highScore,
+    runLog: newLog,
+    totalRunsPlayed: save.totalRunsPlayed + 1,
   });
 
   return isHigh;
 }
 
 export function getCachedSave() {
-  return (
-    cachedSave ||
-    DEFAULT_SAVE
-  );
+  return cachedSave || DEFAULT_SAVE;
 }
+
+export { DEFAULT_SAVE, LEVELS };
