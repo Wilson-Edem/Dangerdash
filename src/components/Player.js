@@ -1,5 +1,4 @@
-import React, { useEffect, useRef } from 'react';
-
+import React, { useMemo } from 'react';
 import {
   Group,
   Circle,
@@ -12,50 +11,53 @@ import { useTheme } from '../context/ThemeContext';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
 
+const RUN_SOURCES = [
+  require('../../assets/images/player/animation/run/run_01.png'),
+  require('../../assets/images/player/animation/run/run_02.png'),
+  require('../../assets/images/player/animation/run/run_03.png'),
+  require('../../assets/images/player/animation/run/run_04.png'),
+  require('../../assets/images/player/animation/run/run_05.png'),
+];
 
-const RUN_01 = require(
-  '../../assets/images/player/animation/run/run_01.png'
-);
+const JUMP_SOURCES = [
+  require('../../assets/images/player/animation/jump/jump_01.png'),
+  require('../../assets/images/player/animation/jump/jump_02.png'),
+  require('../../assets/images/player/animation/jump/jump_03.png'),
+  require('../../assets/images/player/animation/jump/jump_04.png'),
+  require('../../assets/images/player/animation/jump/jump_05.png'),
+];
 
-const RUN_02 = require(
-  '../../assets/images/player/animation/run/run_02.png'
-);
+/*
+ * The animation PNGs contain different amounts of transparent
+ * padding. These anchors compensate for that padding so the
+ * visible character stays centered and planted on the same
+ * 50x66 gameplay hitbox instead of appearing to vibrate.
+ */
+const FRAME_ANCHORS = [
+  // run_01 ... run_05
+  { x: 0.73, y: 9.221 },
+  { x: 0.112, y: 10.191 },
+  { x: 2.303, y: 7.926 },
+  { x: 0.393, y: 13.588 },
+  { x: -0.169, y: 6.147 },
 
-const RUN_03 = require(
-  '../../assets/images/player/animation/run/run_03.png'
-);
+  // jump_01 ... jump_05
+  { x: -0.281, y: 8.25 },
+  { x: 0.169, y: 5.985 },
+  { x: -0.169, y: 6.471 },
+  { x: 2.978, y: 11.324 },
+  { x: 0.225, y: 7.118 },
+];
 
-const RUN_04 = require(
-  '../../assets/images/player/animation/run/run_04.png'
-);
-
-const RUN_05 = require(
-  '../../assets/images/player/animation/run/run_05.png'
-);
-
-const JUMP_01 = require(
-  '../../assets/images/player/animation/jump/jump_01.png'
-);
-
-const JUMP_02 = require(
-  '../../assets/images/player/animation/jump/jump_02.png'
-);
-
-const JUMP_03 = require(
-  '../../assets/images/player/animation/jump/jump_03.png'
-);
-
-const JUMP_04 = require(
-  '../../assets/images/player/animation/jump/jump_04.png'
-);
-
-const JUMP_05 = require(
-  '../../assets/images/player/animation/jump/jump_05.png'
-);
+function useAnimationImages(sources) {
+  return sources.map((source) => useImage(source));
+}
 
 export default function Player({
   playerX,
   playerY,
+  playerVelocityY = 0,
+  airborneFrame = 0,
   powerJumpFlash,
   isGrounded,
   hasShield,
@@ -64,233 +66,124 @@ export default function Player({
   gravityFlipped,
   skinColors,
 }) {
-  const { theme, themeKey } = useTheme();
+  const { theme } = useTheme();
 
-  // ========================================
-  // LOAD PLAYER ANIMATION
-  // ========================================
-
-  const run01 = useImage(RUN_01);
-  const run02 = useImage(RUN_02);
-  const run03 = useImage(RUN_03);
-  const run04 = useImage(RUN_04);
-  const run05 = useImage(RUN_05);
-
-  const jump01 = useImage(JUMP_01);
-  const jump02 = useImage(JUMP_02);
-  const jump03 = useImage(JUMP_03);
-  const jump04 = useImage(JUMP_04);
-  const jump05 = useImage(JUMP_05);
+  const runFrames = useAnimationImages(RUN_SOURCES);
+  const jumpFrames = useAnimationImages(JUMP_SOURCES);
 
   const shieldAuraImage = useImage(
     theme.assets.shieldAura
   );
 
-  const runFrames = [
-    run01,
-    run02,
-    run03,
-    run04,
-    run05,
-  ];
-
-  const jumpFrames = [
-    jump01,
-    jump02,
-    jump03,
-    jump04,
-    jump05,
-  ];
-
-  // ========================================
-  // JUMP ANIMATION TRACKING
-  // ========================================
-
-  const wasGroundedRef =
-    useRef(isGrounded);
-
-  const jumpStartFrameRef =
-    useRef(animFrame);
-
-  const previousYRef =
-    useRef(playerY);
-
   /*
-   * Detect the exact frame on which the
-   * player leaves or returns to a platform.
-   *
-   * This resets the airborne animation so
-   * every jump starts from jump_01.
-   */
-  useEffect(() => {
-    if (
-      !isGrounded &&
-      wasGroundedRef.current
-    ) {
-      jumpStartFrameRef.current =
-        animFrame;
-    }
-
-    if (
-      isGrounded &&
-      !wasGroundedRef.current
-    ) {
-      jumpStartFrameRef.current =
-        animFrame;
-    }
-
-    wasGroundedRef.current =
-      isGrounded;
-  }, [
-    isGrounded,
-    animFrame,
-  ]);
-
-  // ========================================
-  // DETECT RISING / FALLING
-  // ========================================
-
-  /*
-   * We determine the movement direction
-   * from the actual physics Y position.
+   * The physics loop owns the vertical movement state.
    *
    * Normal gravity:
+   *   velocity < 0 = rising
+   *   velocity > 0 = falling
    *
-   *   Y decreasing = rising
-   *   Y increasing = falling
-   *
-   * Gravity flip:
-   *
-   *   Y increasing = rising
-   *   Y decreasing = falling
-   *
-   * This means the animation follows the
-   * actual player movement instead of simply
-   * assuming every airborne frame is a jump.
+   * Gravity flip reverses that relationship.
    */
+  const verticalDirection = useMemo(() => {
+    const gravitySign = gravityFlipped ? -1 : 1;
+    const signedVelocity =
+      playerVelocityY * gravitySign;
 
-  const previousY =
-    previousYRef.current;
+    if (signedVelocity < -0.05) {
+      return 'rising';
+    }
 
-  const yDelta =
-    playerY - previousY;
+    if (signedVelocity > 0.05) {
+      return 'falling';
+    }
 
-  previousYRef.current =
-    playerY;
-
-  let movementPhase =
-    'rising';
-
-  if (
-    Math.abs(yDelta) < 0.01
-  ) {
-    /*
-     * When movement is extremely small,
-     * keep the current airborne sequence
-     * moving rather than switching randomly.
-     */
-    movementPhase = 'rising';
-  } else if (!gravityFlipped) {
-    movementPhase =
-      yDelta > 0
-        ? 'falling'
-        : 'rising';
-  } else {
-    movementPhase =
-      yDelta < 0
-        ? 'falling'
-        : 'rising';
-  }
-
-  // ========================================
-  // RUNNING ANIMATION
-  // ========================================
+    return 'apex';
+  }, [
+    playerVelocityY,
+    gravityFlipped,
+  ]);
 
   /*
-   * The game loop already increments
-   * animFrame.
-   *
-   * Five frames gives us a complete running
-   * cycle.
+   * Running:
+   *   run_01 -> run_02 -> run_03 -> run_04 -> run_05
    */
   const runFrameIndex =
     Math.floor(animFrame) %
-    runFrames.length;
+    RUN_SOURCES.length;
 
-  // ========================================
-  // AIRBORNE ANIMATION
-  // ========================================
+  /*
+   * Jumping:
+   *   jump_01 -> jump_02 -> jump_03
+   *
+   * Falling:
+   *   jump_04 -> jump_05
+   */
+  let jumpFrameIndex = 2;
 
-  const jumpTick =
-    Math.max(
+  if (verticalDirection === 'rising') {
+    jumpFrameIndex = Math.min(
+      2,
+      Math.floor(
+        Math.max(0, airborneFrame) / 4
+      )
+    );
+  } else if (
+    verticalDirection === 'falling'
+  ) {
+    const fallTick = Math.max(
       0,
-      Math.floor(animFrame) -
-        Math.floor(
-          jumpStartFrameRef.current
-        )
+      Math.floor(airborneFrame) - 8
     );
 
-  let jumpFrameIndex;
-
-  /*
-   * ASCENDING
-   *
-   * 01 -> 02 -> 03
-   */
-  if (
-    movementPhase === 'rising'
-  ) {
     jumpFrameIndex =
+      3 +
       Math.min(
-        2,
-        Math.floor(
-          jumpTick / 3
-        )
+        1,
+        Math.floor(fallTick / 4)
       );
   }
 
-  /*
-   * FALLING
-   *
-   * 04 -> 05
-   *
-   * We intentionally skip back to
-   * jump_01 while descending.
-   */
-  else {
-    jumpFrameIndex =
-      Math.min(
-        4,
-        3 +
-          Math.floor(
-            jumpTick / 3
-          )
-      );
-  }
+  const currentImage = isGrounded
+    ? runFrames[runFrameIndex]
+    : jumpFrames[jumpFrameIndex];
+
+  const imageIndex = isGrounded
+    ? runFrameIndex
+    : RUN_SOURCES.length +
+      jumpFrameIndex;
+
+  const anchor =
+    FRAME_ANCHORS[imageIndex];
+
+  const renderWidth =
+    GAME_CONFIG.PLAYER_WIDTH;
+
+  const renderHeight =
+    GAME_CONFIG.PLAYER_HEIGHT;
 
   /*
-   * Grounded:
-   *     RUN animation
+   * playerX/playerY remain the actual physics
+   * hitbox coordinates.
    *
-   * Airborne:
-   *     JUMP/FALL animation
+   * These offsets only compensate for transparent
+   * pixels inside the animation PNG.
    */
-  const currentImage =
-    isGrounded
-      ? runFrames[
-          runFrameIndex
-        ]
-      : jumpFrames[
-          jumpFrameIndex
-        ];
+  const imageX =
+    playerX + anchor.x;
 
-  // ========================================
-  // COLORS
-  // ========================================
+  const imageY =
+    playerY + anchor.y;
+
+  const centerX =
+    playerX +
+    renderWidth / 2;
+
+  const centerY =
+    playerY +
+    renderHeight / 2;
 
   const skinColor =
-    (skinColors &&
-      skinColors[0]) ||
+    (skinColors && skinColors[0]) ||
     theme.colors.hudBorder;
 
   const auraColor =
@@ -301,70 +194,23 @@ export default function Player({
     skinColor ||
     theme.colors.comboText;
 
-  // ========================================
-  // PLAYER RENDER SIZE
-  // ========================================
-
   /*
-   * IMPORTANT:
+   * Flip only the player sprite.
    *
-   * Do NOT use the old PLAYER_RENDER_SCALE
-   * here.
-   *
-   * The supplied animation implementation
-   * uses the same 50x66 player box as the
-   * physics hitbox.
-   *
-   * This keeps the visual player and physics
-   * player synchronized.
+   * Do not use a negative Image height.
    */
-
-  const renderWidth =
-    GAME_CONFIG.PLAYER_WIDTH;
-
-  const renderHeight =
-    GAME_CONFIG.PLAYER_HEIGHT;
-
-  /*
-   * The supplied animation implementation
-   * uses SPRITE_OFFSET_Y = 10.
-   *
-   * This compensates for transparent padding
-   * inside the animation PNGs.
-   */
-  const offsetY =
-    GAME_CONFIG.SPRITE_OFFSET_Y ||
-    0;
-
-  const renderX =
-    playerX;
-
-  const renderY =
-    playerY + offsetY;
-
-  const centerX =
-    renderX +
-    renderWidth / 2;
-
-  const centerY =
-    renderY +
-    renderHeight / 2;
+  const playerTransform =
+    gravityFlipped
+      ? [{ scaleY: -1 }]
+      : undefined;
 
   return (
-    <Group
-      key={`player-theme-${themeKey}`}
-    >
-
-      {/* =================================
-          PLAYER BASE GLOW
-      ================================== */}
-
+    <Group>
+      {/* PLAYER BASE GLOW */}
       <Circle
         cx={centerX}
         cy={centerY}
-        r={
-          renderHeight * 0.58
-        }
+        r={renderHeight * 0.58}
         color={skinColor}
         opacity={0.16}
       >
@@ -374,17 +220,12 @@ export default function Player({
         />
       </Circle>
 
-      {/* =================================
-          ACTIVE POWER AURA
-      ================================== */}
-
+      {/* ACTIVE POWER AURA */}
       {activePower && (
         <Circle
           cx={centerX}
           cy={centerY}
-          r={
-            renderHeight * 0.88
-          }
+          r={renderHeight * 0.88}
           color={auraColor}
           opacity={0.38}
         >
@@ -395,17 +236,12 @@ export default function Player({
         </Circle>
       )}
 
-      {/* =================================
-          POWER JUMP FLASH
-      ================================== */}
-
+      {/* POWER JUMP FLASH */}
       {powerJumpFlash > 0 && (
         <Circle
           cx={centerX}
           cy={centerY}
-          r={
-            renderHeight * 0.78
-          }
+          r={renderHeight * 0.78}
           color={
             theme.colors.hudBorder
           }
@@ -421,81 +257,46 @@ export default function Player({
         </Circle>
       )}
 
-      {/* =================================
-          RUN / JUMP / FALL PLAYER
-      ================================== */}
-
+      {/* RUN / JUMP / FALL SPRITE */}
       {currentImage && (
-        <Image
-          image={currentImage}
-
-          x={Math.round(
-            renderX
-          )}
-
-          y={Math.round(
-            gravityFlipped
-              ? renderY +
-                renderHeight
-              : renderY
-          )}
-
-          width={
-            renderWidth
-          }
-
-          height={
-            gravityFlipped
-              ? -renderHeight
-              : renderHeight
-          }
-
-          /*
-           * The supplied animation PNGs
-           * contain transparent padding.
-           *
-           * contain preserves their original
-           * proportions.
-           */
-          fit="contain"
-        />
+        <Group
+          origin={{
+            x: centerX,
+            y: centerY,
+          }}
+          transform={playerTransform}
+        >
+          <Image
+            image={currentImage}
+            x={Math.round(imageX)}
+            y={Math.round(imageY)}
+            width={renderWidth}
+            height={renderHeight}
+            fit="fill"
+          />
+        </Group>
       )}
 
-      {/* =================================
-          SHIELD
-      ================================== */}
-
+      {/* SHIELD */}
       {hasShield &&
         shieldAuraImage && (
           <Image
-            image={
-              shieldAuraImage
-            }
-
+            image={shieldAuraImage}
             x={
-              Math.round(
-                renderX
-              ) - 18
+              Math.round(playerX) - 18
             }
-
             y={
-              Math.round(
-                renderY
-              ) - 16
+              Math.round(playerY) - 16
             }
-
             width={
               renderWidth + 36
             }
-
             height={
               renderHeight + 32
             }
-
             fit="contain"
           />
         )}
-
     </Group>
   );
-    }
+            }
