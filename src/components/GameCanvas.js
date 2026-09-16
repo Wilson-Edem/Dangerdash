@@ -62,22 +62,28 @@ export default function GameCanvas({
 
   const playerBottom = playerY + GAME_CONFIG.PLAYER_HEIGHT;
   const submergedTop = Math.max(waterSurfaceY, playerY);
-  const submergedHeight = Math.max(0, Math.min(playerBottom, GAME_CONFIG.VIRTUAL_HEIGHT) - submergedTop);
+  const submergedHeight = Math.max(
+    0,
+    Math.min(playerBottom, GAME_CONFIG.VIRTUAL_HEIGHT) - submergedTop
+  );
 
   return (
     <View style={styles.container}>
-      {/* 
-        key={themeKey} forces a full unmount/remount of the entire Skia canvas
-        when the theme changes. This destroys Skia's internal GPU texture cache,
-        ensuring platforms, items, water, and backgrounds all rebuild with the
-        newly-selected theme's assets.
-      */}
-      <Canvas key={themeKey} style={styles.canvas}>
-        <Rect x={0} y={0} width={GAME_CONFIG.VIRTUAL_WIDTH} height={GAME_CONFIG.VIRTUAL_HEIGHT}>
+      <Canvas style={styles.canvas}>
+        <Rect
+          x={0}
+          y={0}
+          width={GAME_CONFIG.VIRTUAL_WIDTH}
+          height={GAME_CONFIG.VIRTUAL_HEIGHT}
+        >
           <LinearGradient
             start={vec(0, 0)}
             end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)}
-            colors={[PALETTE.BG_TOP, PALETTE.BG_MID, PALETTE.BG_BOTTOM]}
+            colors={[
+              PALETTE.BG_TOP,
+              PALETTE.BG_MID,
+              PALETTE.BG_BOTTOM,
+            ]}
           />
         </Rect>
 
@@ -94,37 +100,102 @@ export default function GameCanvas({
 
         {bgCityFar && (
           <Group>
-            <Image image={bgCityFar} x={-farOffset} y={155} width={GAME_CONFIG.VIRTUAL_WIDTH} height={185} fit="fill" opacity={0.88} />
-            <Image image={bgCityFar} x={GAME_CONFIG.VIRTUAL_WIDTH - farOffset} y={155} width={GAME_CONFIG.VIRTUAL_WIDTH} height={185} fit="fill" opacity={0.88} />
+            <Image
+              image={bgCityFar}
+              x={-farOffset}
+              y={155}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={185}
+              fit="fill"
+              opacity={0.88}
+            />
+            <Image
+              image={bgCityFar}
+              x={GAME_CONFIG.VIRTUAL_WIDTH - farOffset}
+              y={155}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={185}
+              fit="fill"
+              opacity={0.88}
+            />
           </Group>
         )}
 
         {bgCityNear && (
           <Group>
-            <Image image={bgCityNear} x={-nearOffset} y={205} width={GAME_CONFIG.VIRTUAL_WIDTH} height={175} fit="fill" opacity={0.94} />
-            <Image image={bgCityNear} x={GAME_CONFIG.VIRTUAL_WIDTH - nearOffset} y={205} width={GAME_CONFIG.VIRTUAL_WIDTH} height={175} fit="fill" opacity={0.94} />
+            <Image
+              image={bgCityNear}
+              x={-nearOffset}
+              y={205}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={175}
+              fit="fill"
+              opacity={0.94}
+            />
+            <Image
+              image={bgCityNear}
+              x={GAME_CONFIG.VIRTUAL_WIDTH - nearOffset}
+              y={205}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={175}
+              fit="fill"
+              opacity={0.94}
+            />
           </Group>
         )}
 
         {waterTile ? (
           <Group>
-            <Rect x={0} y={waterSurfaceY + waterBobY} width={GAME_CONFIG.VIRTUAL_WIDTH} height={waterHeight}>
+            <Rect
+              x={0}
+              y={waterSurfaceY + waterBobY}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={waterHeight}
+            >
               <ImageShader
                 image={waterTile}
                 fit="none"
-                rect={{ x: -waterScrollX, y: 0, width: WATER_TILE_W, height: waterHeight }}
+                rect={{
+                  x: -waterScrollX,
+                  y: 0,
+                  width: WATER_TILE_W,
+                  height: waterHeight,
+                }}
                 tx="repeat"
                 ty="clamp"
               />
             </Rect>
-            <Rect x={0} y={waterSurfaceY + waterBobY} width={GAME_CONFIG.VIRTUAL_WIDTH} height={3} color={PALETTE.WHITE} opacity={0.62} />
-            <Rect x={0} y={waterSurfaceY + waterBobY + 3} width={GAME_CONFIG.VIRTUAL_WIDTH} height={2} color={theme.colors.platformTopEdgeStart} opacity={0.45} />
+
+            <Rect
+              x={0}
+              y={waterSurfaceY + waterBobY}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={3}
+              color={PALETTE.WHITE}
+              opacity={0.62}
+            />
+
+            <Rect
+              x={0}
+              y={waterSurfaceY + waterBobY + 3}
+              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              height={2}
+              color={theme.colors.platformTopEdgeStart}
+              opacity={0.45}
+            />
           </Group>
         ) : (
-          <Rect x={0} y={waterSurfaceY} width={GAME_CONFIG.VIRTUAL_WIDTH} height={waterHeight} color={theme.colors.waterColor} />
+          <Rect
+            x={0}
+            y={waterSurfaceY}
+            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            height={waterHeight}
+            color={theme.colors.waterColor}
+          />
         )}
 
         <Platform platforms={platforms} />
+
         <Items items={items} />
 
         <Player
@@ -171,5 +242,7 @@ const styles = StyleSheet.create({
     height: GAME_CONFIG.VIRTUAL_HEIGHT,
     backgroundColor: '#030408',
   },
-  canvas: { flex: 1 },
+  canvas: {
+    flex: 1,
+  },
 });
