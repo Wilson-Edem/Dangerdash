@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+
 import {
   Canvas,
   Rect,
@@ -10,10 +11,12 @@ import {
   Image,
   ImageShader,
 } from '@shopify/react-native-skia';
+
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
 import { useTheme } from '../context/ThemeContext';
 import { THEMES } from '../constants/themes';
+
 import Player from './Player';
 import Platform from './Platform';
 import Items from './Items';
@@ -24,6 +27,8 @@ const WATER_SURFACE_OFFSET = 50;
 export default function GameCanvas({
   playerX,
   playerY,
+  playerVelocityY,
+  airborneFrame,
   powerJumpFlash,
   platforms,
   items,
@@ -37,48 +42,140 @@ export default function GameCanvas({
   deathFadeAlpha,
   skinColors,
 }) {
-  const { theme, themeKey } = useTheme();
+  const { theme, themeKey } =
+    useTheme();
 
-  const cyberSky = useImage(THEMES.cyberpunk.assets.bgSky);
-  const woodenSky = useImage(THEMES.wooden.assets.bgSky);
-  const cyberFar = useImage(THEMES.cyberpunk.assets.bgFar);
-  const woodenFar = useImage(THEMES.wooden.assets.bgFar);
-  const cyberNear = useImage(THEMES.cyberpunk.assets.bgNear);
-  const woodenNear = useImage(THEMES.wooden.assets.bgNear);
-  const cyberWater = useImage(THEMES.cyberpunk.assets.waterTile);
-  const woodenWater = useImage(THEMES.wooden.assets.waterTile);
+  const cyberSky =
+    useImage(
+      THEMES.cyberpunk.assets.bgSky
+    );
 
-  const bgSky = themeKey === 'wooden' ? woodenSky : cyberSky;
-  const bgCityFar = themeKey === 'wooden' ? woodenFar : cyberFar;
-  const bgCityNear = themeKey === 'wooden' ? woodenNear : cyberNear;
-  const waterTile = themeKey === 'wooden' ? woodenWater : cyberWater;
+  const woodenSky =
+    useImage(
+      THEMES.wooden.assets.bgSky
+    );
 
-  const farOffset = (score * 0.55) % GAME_CONFIG.VIRTUAL_WIDTH;
-  const nearOffset = (score * 1.35) % GAME_CONFIG.VIRTUAL_WIDTH;
-  const waterSurfaceY = GAME_CONFIG.WATER_LEVEL_Y - WATER_SURFACE_OFFSET;
-  const waterHeight = Math.max(0, GAME_CONFIG.VIRTUAL_HEIGHT - waterSurfaceY);
-  const waterScrollX = (animFrame * 1.35) % WATER_TILE_W;
-  const waterBobY = Math.sin(animFrame * 0.055) * 2;
+  const cyberFar =
+    useImage(
+      THEMES.cyberpunk.assets.bgFar
+    );
 
-  const playerBottom = playerY + GAME_CONFIG.PLAYER_HEIGHT;
-  const submergedTop = Math.max(waterSurfaceY, playerY);
-  const submergedHeight = Math.max(
-    0,
-    Math.min(playerBottom, GAME_CONFIG.VIRTUAL_HEIGHT) - submergedTop
-  );
+  const woodenFar =
+    useImage(
+      THEMES.wooden.assets.bgFar
+    );
+
+  const cyberNear =
+    useImage(
+      THEMES.cyberpunk.assets.bgNear
+    );
+
+  const woodenNear =
+    useImage(
+      THEMES.wooden.assets.bgNear
+    );
+
+  const cyberWater =
+    useImage(
+      THEMES.cyberpunk.assets.waterTile
+    );
+
+  const woodenWater =
+    useImage(
+      THEMES.wooden.assets.waterTile
+    );
+
+  const bgSky =
+    themeKey === 'wooden'
+      ? woodenSky
+      : cyberSky;
+
+  const bgCityFar =
+    themeKey === 'wooden'
+      ? woodenFar
+      : cyberFar;
+
+  const bgCityNear =
+    themeKey === 'wooden'
+      ? woodenNear
+      : cyberNear;
+
+  const waterTile =
+    themeKey === 'wooden'
+      ? woodenWater
+      : cyberWater;
+
+  const farOffset =
+    (score * 0.55) %
+    GAME_CONFIG.VIRTUAL_WIDTH;
+
+  const nearOffset =
+    (score * 1.35) %
+    GAME_CONFIG.VIRTUAL_WIDTH;
+
+  const waterSurfaceY =
+    GAME_CONFIG.WATER_LEVEL_Y -
+    WATER_SURFACE_OFFSET;
+
+  const waterHeight =
+    Math.max(
+      0,
+      GAME_CONFIG.VIRTUAL_HEIGHT -
+        waterSurfaceY
+    );
+
+  const waterScrollX =
+    (animFrame * 1.35) %
+    WATER_TILE_W;
+
+  const waterBobY =
+    Math.sin(
+      animFrame * 0.055
+    ) * 2;
+
+  const playerBottom =
+    playerY +
+    GAME_CONFIG.PLAYER_HEIGHT;
+
+  const submergedTop =
+    Math.max(
+      waterSurfaceY,
+      playerY
+    );
+
+  const submergedHeight =
+    Math.max(
+      0,
+      Math.min(
+        playerBottom,
+        GAME_CONFIG.VIRTUAL_HEIGHT
+      ) -
+        submergedTop
+    );
 
   return (
-    <View style={styles.container}>
-      <Canvas style={styles.canvas}>
+    <View
+      style={styles.container}
+    >
+      <Canvas
+        style={styles.canvas}
+      >
         <Rect
           x={0}
           y={0}
-          width={GAME_CONFIG.VIRTUAL_WIDTH}
-          height={GAME_CONFIG.VIRTUAL_HEIGHT}
+          width={
+            GAME_CONFIG.VIRTUAL_WIDTH
+          }
+          height={
+            GAME_CONFIG.VIRTUAL_HEIGHT
+          }
         >
           <LinearGradient
             start={vec(0, 0)}
-            end={vec(0, GAME_CONFIG.VIRTUAL_HEIGHT)}
+            end={vec(
+              0,
+              GAME_CONFIG.VIRTUAL_HEIGHT
+            )}
             colors={[
               PALETTE.BG_TOP,
               PALETTE.BG_MID,
@@ -92,8 +189,12 @@ export default function GameCanvas({
             image={bgSky}
             x={0}
             y={0}
-            width={GAME_CONFIG.VIRTUAL_WIDTH}
-            height={GAME_CONFIG.VIRTUAL_HEIGHT}
+            width={
+              GAME_CONFIG.VIRTUAL_WIDTH
+            }
+            height={
+              GAME_CONFIG.VIRTUAL_HEIGHT
+            }
             fit="cover"
           />
         )}
@@ -104,16 +205,24 @@ export default function GameCanvas({
               image={bgCityFar}
               x={-farOffset}
               y={155}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={185}
               fit="fill"
               opacity={0.88}
             />
+
             <Image
               image={bgCityFar}
-              x={GAME_CONFIG.VIRTUAL_WIDTH - farOffset}
+              x={
+                GAME_CONFIG.VIRTUAL_WIDTH -
+                farOffset
+              }
               y={155}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={185}
               fit="fill"
               opacity={0.88}
@@ -127,16 +236,24 @@ export default function GameCanvas({
               image={bgCityNear}
               x={-nearOffset}
               y={205}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={175}
               fit="fill"
               opacity={0.94}
             />
+
             <Image
               image={bgCityNear}
-              x={GAME_CONFIG.VIRTUAL_WIDTH - nearOffset}
+              x={
+                GAME_CONFIG.VIRTUAL_WIDTH -
+                nearOffset
+              }
               y={205}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={175}
               fit="fill"
               opacity={0.94}
@@ -148,8 +265,13 @@ export default function GameCanvas({
           <Group>
             <Rect
               x={0}
-              y={waterSurfaceY + waterBobY}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              y={
+                waterSurfaceY +
+                waterBobY
+              }
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={waterHeight}
             >
               <ImageShader
@@ -168,8 +290,13 @@ export default function GameCanvas({
 
             <Rect
               x={0}
-              y={waterSurfaceY + waterBobY}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              y={
+                waterSurfaceY +
+                waterBobY
+              }
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={3}
               color={PALETTE.WHITE}
               opacity={0.62}
@@ -177,10 +304,19 @@ export default function GameCanvas({
 
             <Rect
               x={0}
-              y={waterSurfaceY + waterBobY + 3}
-              width={GAME_CONFIG.VIRTUAL_WIDTH}
+              y={
+                waterSurfaceY +
+                waterBobY +
+                3
+              }
+              width={
+                GAME_CONFIG.VIRTUAL_WIDTH
+              }
               height={2}
-              color={theme.colors.platformTopEdgeStart}
+              color={
+                theme.colors
+                  .platformTopEdgeStart
+              }
               opacity={0.45}
             />
           </Group>
@@ -188,25 +324,47 @@ export default function GameCanvas({
           <Rect
             x={0}
             y={waterSurfaceY}
-            width={GAME_CONFIG.VIRTUAL_WIDTH}
+            width={
+              GAME_CONFIG.VIRTUAL_WIDTH
+            }
             height={waterHeight}
-            color={theme.colors.waterColor}
+            color={
+              theme.colors.waterColor
+            }
           />
         )}
 
-        <Platform platforms={platforms} />
+        <Platform
+          platforms={platforms}
+        />
 
-        <Items items={items} />
+        <Items
+          items={items}
+        />
 
         <Player
           playerX={playerX}
           playerY={playerY}
-          powerJumpFlash={powerJumpFlash}
-          isGrounded={isGrounded}
+          playerVelocityY={
+            playerVelocityY
+          }
+          airborneFrame={
+            airborneFrame
+          }
+          powerJumpFlash={
+            powerJumpFlash
+          }
+          isGrounded={
+            isGrounded
+          }
           hasShield={hasShield}
           animFrame={animFrame}
-          activePower={activePower}
-          gravityFlipped={gravityFlipped}
+          activePower={
+            activePower
+          }
+          gravityFlipped={
+            gravityFlipped
+          }
           skinColors={skinColors}
         />
 
@@ -214,9 +372,16 @@ export default function GameCanvas({
           <Rect
             x={playerX - 4}
             y={submergedTop}
-            width={GAME_CONFIG.PLAYER_WIDTH + 8}
-            height={submergedHeight}
-            color={theme.colors.waterColor}
+            width={
+              GAME_CONFIG.PLAYER_WIDTH +
+              8
+            }
+            height={
+              submergedHeight
+            }
+            color={
+              theme.colors.waterColor
+            }
             opacity={0.48}
           />
         )}
@@ -225,10 +390,17 @@ export default function GameCanvas({
           <Rect
             x={0}
             y={0}
-            width={GAME_CONFIG.VIRTUAL_WIDTH}
-            height={GAME_CONFIG.VIRTUAL_HEIGHT}
+            width={
+              GAME_CONFIG.VIRTUAL_WIDTH
+            }
+            height={
+              GAME_CONFIG.VIRTUAL_HEIGHT
+            }
             color="#070009"
-            opacity={Math.min(1, deathFadeAlpha)}
+            opacity={Math.min(
+              1,
+              deathFadeAlpha
+            )}
           />
         )}
       </Canvas>
@@ -238,10 +410,13 @@ export default function GameCanvas({
 
 const styles = StyleSheet.create({
   container: {
-    width: GAME_CONFIG.VIRTUAL_WIDTH,
-    height: GAME_CONFIG.VIRTUAL_HEIGHT,
+    width:
+      GAME_CONFIG.VIRTUAL_WIDTH,
+    height:
+      GAME_CONFIG.VIRTUAL_HEIGHT,
     backgroundColor: '#030408',
   },
+
   canvas: {
     flex: 1,
   },
