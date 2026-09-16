@@ -65,22 +65,83 @@ export default function Player({
       skinColors[0]) ||
     theme.colors.comboText;
 
+  /*
+   * ========================================
+   * VISIBLE PLAYER SIZE
+   * ========================================
+   *
+   * Physics remains 50x66.
+   *
+   * The visible sprite is 15% smaller:
+   *
+   * 50 x 0.85 = 42.5
+   * 66 x 0.85 = 56.1
+   *
+   * We then bottom-align the sprite against
+   * the physics hitbox.
+   *
+   * This means the visible feet sit directly
+   * on the platform instead of extending below it.
+   */
+
+  const renderScale =
+    GAME_CONFIG.PLAYER_RENDER_SCALE || 0.85;
+
+  const renderWidth =
+    GAME_CONFIG.PLAYER_WIDTH *
+    renderScale;
+
+  const renderHeight =
+    GAME_CONFIG.PLAYER_HEIGHT *
+    renderScale;
+
+  /*
+   * Difference between the physics height
+   * and visible sprite height.
+   *
+   * This keeps the bottom of the sprite
+   * aligned with the physics feet.
+   */
+  const bottomAlignmentOffset =
+    GAME_CONFIG.PLAYER_HEIGHT -
+    renderHeight;
+
+  /*
+   * Additional configurable visual offset.
+   *
+   * Currently 0.
+   */
   const offsetY =
     GAME_CONFIG.SPRITE_OFFSET_Y || 0;
 
   const renderY =
-    playerY + offsetY;
+    playerY +
+    bottomAlignmentOffset +
+    offsetY;
+
+  /*
+   * Center the smaller sprite inside
+   * the original physics hitbox.
+   */
+  const renderX =
+    playerX +
+    (
+      GAME_CONFIG.PLAYER_WIDTH -
+      renderWidth
+    ) / 2;
 
   const centerX =
-    playerX +
-    GAME_CONFIG.PLAYER_WIDTH / 2;
+    renderX +
+    renderWidth / 2;
 
   const centerY =
     renderY +
-    GAME_CONFIG.PLAYER_HEIGHT / 2;
+    renderHeight / 2;
 
   return (
-    <Group key={`player-theme-${themeKey}`}>
+    <Group
+      key={`player-theme-${themeKey}`}
+    >
       {/* =========================
           POWER AURA
       ========================== */}
@@ -137,25 +198,27 @@ export default function Player({
       {spriteImage && (
         <Image
           image={spriteImage}
-          x={Math.round(playerX)}
+
+          x={Math.round(renderX)}
+
           y={Math.round(
             gravityFlipped
               ? renderY +
-                  GAME_CONFIG.PLAYER_HEIGHT
+                renderHeight
               : renderY
           )}
-          width={
-            GAME_CONFIG.PLAYER_WIDTH
-          }
+
+          width={renderWidth}
+
           height={
             gravityFlipped
-              ? -GAME_CONFIG.PLAYER_HEIGHT
-              : GAME_CONFIG.PLAYER_HEIGHT
+              ? -renderHeight
+              : renderHeight
           }
 
           /*
-           * contain prevents the sprite from
-           * being stretched unnaturally.
+           * contain keeps the sprite
+           * aspect ratio correct.
            */
           fit="contain"
 
@@ -181,20 +244,23 @@ export default function Player({
         shieldAuraImage && (
           <Image
             image={shieldAuraImage}
+
             x={
-              Math.round(playerX) - 18
+              Math.round(renderX) - 18
             }
+
             y={
               Math.round(renderY) - 16
             }
+
             width={
-              GAME_CONFIG.PLAYER_WIDTH +
-              36
+              renderWidth + 36
             }
+
             height={
-              GAME_CONFIG.PLAYER_HEIGHT +
-              32
+              renderHeight + 32
             }
+
             fit="contain"
           />
         )}
