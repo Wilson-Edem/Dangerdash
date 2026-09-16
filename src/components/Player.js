@@ -12,36 +12,6 @@ import { useTheme } from '../context/ThemeContext';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import { PALETTE } from '../constants/palette';
 
-/*
- * ========================================
- * PLAYER ANIMATION ASSETS
- * ========================================
- *
- * The previous Player implementation used
- * the old player_spritesheet.png.
- *
- * That spritesheet is NOT the animation set.
- *
- * DangerDash now uses the supplied individual
- * animation images:
- *
- * RUN:
- *   run_01
- *   run_02
- *   run_03
- *   run_04
- *   run_05
- *
- * AIRBORNE:
- *   jump_01
- *   jump_02
- *   jump_03
- *   jump_04
- *   jump_05
- *
- * The jump set is also used for falling because
- * there is no separate falling asset set.
- */
 
 const RUN_01 = require(
   '../../assets/images/player/animation/run/run_01.png'
