@@ -9,13 +9,9 @@ import {
 } from 'react-native';
 
 import GameCanvas from '../components/GameCanvas';
-
 import { useGameLoop } from '../utils/useGameLoop';
-
 import { GAME_CONFIG } from '../constants/gameConfig';
-
 import { useTheme } from '../context/ThemeContext';
-
 import { PALETTE } from '../constants/palette';
 
 export default function GameScreen({
@@ -25,7 +21,8 @@ export default function GameScreen({
   settings,
   skinColors,
 }) {
-  const { theme } = useTheme();
+  const { theme } =
+    useTheme();
 
   const {
     gameState,
@@ -35,6 +32,10 @@ export default function GameScreen({
     hasShield,
     isGrounded,
     animFrame,
+
+    playerVelocityY,
+    airborneFrame,
+
     playerX,
     playerY,
     powerJumpFlash,
@@ -60,13 +61,19 @@ export default function GameScreen({
 
   return (
     <Pressable
-      onPressIn={handleScreenTap}
+      onPress={handleScreenTap}
       style={styles.container}
     >
       <View style={styles.gameContent}>
         <GameCanvas
           playerX={playerX}
           playerY={playerY}
+          playerVelocityY={
+            playerVelocityY
+          }
+          airborneFrame={
+            airborneFrame
+          }
           powerJumpFlash={
             powerJumpFlash
           }
@@ -92,7 +99,6 @@ export default function GameScreen({
 
         {showHUD && (
           <>
-            {/* LEFT HUD */}
             <View
               style={styles.leftHUD}
               pointerEvents="none"
@@ -188,7 +194,6 @@ export default function GameScreen({
               </View>
             </View>
 
-            {/* RIGHT HUD */}
             <View
               style={styles.rightHUD}
               pointerEvents="none"
@@ -260,7 +265,6 @@ export default function GameScreen({
               )}
             </View>
 
-            {/* PAUSE */}
             {gameState ===
               GAME_CONFIG.STATE.PLAYING &&
               onPause && (
@@ -286,7 +290,6 @@ export default function GameScreen({
           </>
         )}
 
-        {/* GAME START OVERLAY */}
         {gameState ===
           GAME_CONFIG.STATE.MENU && (
           <View
@@ -321,41 +324,40 @@ export default function GameScreen({
           </View>
         )}
 
-        {/* GAME OVER */}
         {gameState ===
           GAME_CONFIG.STATE.GAMEOVER &&
           deathFadeAlpha >= 0.7 && (
-            <View
+          <View
+            style={
+              styles.centerOverlay
+            }
+            pointerEvents="none"
+          >
+            <Text
               style={
-                styles.centerOverlay
+                styles.gameOverText
               }
-              pointerEvents="none"
             >
-              <Text
-                style={
-                  styles.gameOverText
-                }
-              >
-                GAME OVER
-              </Text>
+              GAME OVER
+            </Text>
 
-              <Text
-                style={
-                  styles.scoreSummaryText
-                }
-              >
-                FINAL SCORE: {score}
-              </Text>
+            <Text
+              style={
+                styles.scoreSummaryText
+              }
+            >
+              FINAL SCORE: {score}
+            </Text>
 
-              <Text
-                style={
-                  styles.promptText
-                }
-              >
-                SAVING RUN...
-              </Text>
-            </View>
-          )}
+            <Text
+              style={
+                styles.promptText
+              }
+            >
+              SAVING RUN...
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -377,13 +379,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /*
-   * These values are in the 800x450 virtual
-   * coordinate system.
-   *
-   * The cover-scaled App viewport crops the
-   * extra vertical area on wide displays.
-   */
   leftHUD: {
     position: 'absolute',
     top: 16,
@@ -431,8 +426,7 @@ const styles = StyleSheet.create({
 
   smallStat: {
     flexDirection: 'row',
-    justifyContent:
-      'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 3,
   },
