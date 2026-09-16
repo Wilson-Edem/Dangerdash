@@ -35,6 +35,12 @@ export const GAME_CONFIG = {
 
   PLAYER_START_Y: 120,
 
+  /*
+   * Physics hitbox.
+   *
+   * These values are intentionally kept separate
+   * from the visible sprite size.
+   */
   PLAYER_WIDTH: 50,
 
   PLAYER_HEIGHT: 66,
@@ -47,10 +53,30 @@ export const GAME_CONFIG = {
   // JUMP
   // =========================
 
+  /*
+   * First tap:
+   * Normal jump.
+   *
+   * Second tap within DOUBLE_TAP_WINDOW:
+   * Big/power jump.
+   *
+   * Third jump:
+   * Only available after purchasing Extra Jump.
+   */
   JUMP_FORCE: -13.5,
 
   POWER_JUMP_FORCE: -23.0,
 
+  /*
+   * Base game allows:
+   *
+   * 1 normal jump from the ground
+   *
+   * Extra Jump upgrade allows:
+   *
+   * 1 ground jump
+   * 1 additional air jump
+   */
   MAX_MIDAIR_JUMPS: 1,
 
   DOUBLE_TAP_WINDOW: 300,
@@ -77,7 +103,21 @@ export const GAME_CONFIG = {
 
   MAX_GAP: 155,
 
-  SPRITE_OFFSET_Y: 10,
+  /*
+   * No additional downward visual offset.
+   *
+   * Player.js now calculates the correct bottom
+   * alignment automatically after resizing the sprite.
+   */
+  SPRITE_OFFSET_Y: 0,
+
+  /*
+   * Visible player sprite is rendered at 85%
+   * of the physics hitbox size.
+   *
+   * 85% = 15% smaller.
+   */
+  PLAYER_RENDER_SCALE: 0.85,
 
   // =========================
   // ITEMS
@@ -149,8 +189,6 @@ export const GAME_CONFIG = {
   WATER_LEVEL_Y: 365,
 
   FALL_DEATH_Y: 470,
-
-  
 
   MUSIC_BASE_VOLUME: 0.5,
 
