@@ -1862,20 +1862,19 @@ export function useGameLoop({
       // =====================
 
       if (
-        (
-          !isGroundedRef.current &&
-          playerYRef.current +
-            pH >=
-            GAME_CONFIG.WATER_LEVEL_Y
-        ) ||
-        playerYRef.current < -100 ||
-        playerYRef.current +
-          pH >=
-          GAME_CONFIG.FALL_DEATH_Y
-      ) {
-        triggerGameOver();
+  (
+    !isGroundedRef.current &&
+    playerYRef.current +
+      pH >=
+      GAME_CONFIG.WATER_LEVEL_Y
+  ) ||
+  playerYRef.current +
+    pH >=
+    GAME_CONFIG.FALL_DEATH_Y
+) {
+  triggerGameOver();
 
-        return;
+  return;
       }
 
       rafIdRef.current =
