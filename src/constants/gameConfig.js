@@ -184,9 +184,9 @@ export const GAME_CONFIG = {
   // WATER
   // =========================
 
-  WATER_LEVEL_Y: 285,
+  WATER_LEVEL_Y: 365,
 
-  FALL_DEATH_Y: 405,
+  FALL_DEATH_Y: 470,
 
   // =========================
   // AUDIO
