@@ -241,11 +241,7 @@ No online account is required for normal local progression.
 
 Download the latest APK here:
 
-### 👉 [DOWNLOAD DANGERDASH MOBILE APK](YOUR_MAIN_APK_DOWNLOAD_LINK_HERE)
-
-> **Replace `YOUR_MAIN_APK_DOWNLOAD_LINK_HERE` with your actual public APK URL.**
-
-The APK link can point to a GitHub Release, direct file hosting, your website, or another trusted public download location.
+### 👉 [DOWNLOAD DANGERDASH MOBILE APK](https://expo.dev/artifacts/eas/C60tVx2dHtAd8DkvaHMYJ9cFKNep1ELtf2yw7smpujs.apk)
 
 ### 🧪 Installing the APK
 
